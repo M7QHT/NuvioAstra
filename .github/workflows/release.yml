@@ -1,7 +1,6 @@
 # Every push to `main` builds Nuvio Astra for Windows x64 and publishes a GitHub Release:
 #   Nuvio-Astra-<v>-x64-setup.exe        installer (also the update package of the in-app updater)
 #   Nuvio-Astra-<v>-x64-setup.exe.sig    updater signature (minisign, bound to <v>)
-#   Nuvio-Astra-<v>-x64-portable.zip     portable folder
 #   latest.json                          updater manifest (read by installed apps)
 #   SHA256SUMS.txt                       checksums
 # Version: <major>.<minor> from apps/nuvio-desktop/tauri.conf.json, patch = run number (+ optional
@@ -127,7 +126,7 @@ jobs:
           if (-not $nsis) { choco install nsis -y --no-progress; $nsis = "${env:ProgramFiles(x86)}\NSIS" }
           "NSIS_HOME=$nsis" >> $env:GITHUB_ENV
 
-      - name: Package (portable folder + installer)
+      - name: Package (installer)
         run: ./packaging/windows/build-release.ps1 -SkipBuild -LibMpv deps/libmpv-2.dll -Engine deps/nuvio_engine.dll
 
       - name: Sign the update package
@@ -149,7 +148,6 @@ jobs:
           $out = New-Item -ItemType Directory -Force release
           $setup = "Nuvio-Astra-$v-x64-setup.exe"
           Copy-Item "dist/$setup", "dist/$setup.sig" $out
-          Compress-Archive -Path "dist/Nuvio Astra/*" -DestinationPath "$out/Nuvio-Astra-$v-x64-portable.zip"
 
           # Notes: commit subjects since the previous release tag (read as UTF-8: accents kept).
           [Console]::OutputEncoding = [System.Text.UTF8Encoding]::new($false)
