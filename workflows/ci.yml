@@ -1,0 +1,33 @@
+# Pull requests: tests and build check only (nothing is published).
+name: CI (Windows x64)
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: windows-latest
+    timeout-minutes: 60
+    defaults:
+      run:
+        shell: pwsh
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: apps/nuvio-desktop/web/package-lock.json
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+      - name: Frontend
+        working-directory: apps/nuvio-desktop/web
+        run: |
+          npm ci
+          npm run build
+      - name: Tests
+        run: cargo test --workspace

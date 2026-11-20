@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Nuvio NextGen — Player</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <aside id="side">
+    <h1>Nuvio NextGen</h1>
+    <p class="muted">Teste do player embutido (libmpv + WebView2)</p>
+    <div id="sources"></div>
+    <form id="custom">
+      <input id="customUrl" type="url" placeholder="URL de stream (HLS, MP4, MKV…)" />
+      <button type="submit">Abrir</button>
+    </form>
+    <h2>Streams de addons</h2>
+    <form id="addonForm">
+      <select id="addonType" aria-label="Tipo"><option value="tv">tv</option><option value="movie">movie</option><option value="series">series</option></select>
+      <input id="addonId" placeholder="ID do título (ex.: tt0111161)" />
+      <button type="submit">Buscar</button>
+    </form>
+    <div id="addonStreams" class="muted"></div>
+    <dl id="stats"></dl>
+  </aside>
+
+  <!-- Transparent hole: mpv's window below shows through here. -->
+  <section id="video" aria-label="Vídeo">
+    <div id="placeholder">Escolha uma mídia para reproduzir</div>
+    <div id="badge" hidden></div>
+    <div id="controls" hidden>
+      <input id="seek" type="range" min="0" max="1000" value="0" aria-label="Posição" />
+      <div class="row">
+        <button id="play" aria-label="Reproduzir/pausar">⏯</button>
+        <span id="time">0:00 / 0:00</span>
+        <span class="spacer"></span>
+        <label>🔊 <input id="volume" type="range" min="0" max="200" value="100" aria-label="Volume" /></label>
+        <select id="audio" aria-label="Faixa de áudio"></select>
+        <select id="subs" aria-label="Legenda"></select>
+        <select id="speed" aria-label="Velocidade"><option>0.25</option><option>0.5</option><option>0.75</option><option selected>1</option><option>1.25</option><option>1.5</option><option>2</option><option>4</option></select>
+        <select id="mode" aria-label="Modo de imagem"><option value="fit">Fit</option><option value="fill">Fill</option><option value="zoom">Zoom</option><option value="stretch">Stretch</option></select>
+        <button id="subDelayMinus" title="Legenda −250 ms">L−</button><button id="subDelayPlus" title="Legenda +250 ms">L+</button>
+        <button id="audioDelayMinus" title="Áudio −25 ms">A−</button><button id="audioDelayPlus" title="Áudio +25 ms">A+</button>
+        <button id="pip" aria-label="Picture-in-picture">⧉</button>
+        <button id="fs" aria-label="Tela cheia">⛶</button>
+        <button id="close" aria-label="Fechar">✕</button>
+      </div>
+    </div>
+  </section>
+
+  <script src="main.js"></script>
+</body>
+</html>

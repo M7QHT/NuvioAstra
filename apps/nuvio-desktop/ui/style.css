@@ -1,0 +1,100 @@
+:root {
+  --bg: #0b0b0f;
+  --surface: #16171d;
+  --text: #f2f2f5;
+  --muted: #9a9aa6;
+  --accent: #2f6fed;
+  color-scheme: dark;
+}
+
+/* The page itself is transparent; every visible region paints its own background so that
+   only the video hole lets the mpv window show through. */
+html, body {
+  margin: 0;
+  height: 100%;
+  background: transparent;
+  color: var(--text);
+  font: 14px/1.4 "Segoe UI", system-ui, sans-serif;
+  overflow: hidden;
+}
+
+#side {
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 40%;
+  padding: 24px;
+  box-sizing: border-box;
+  background: var(--bg);
+  z-index: 2;
+  overflow: auto;
+}
+h1 { font-size: 20px; margin: 0 0 4px; }
+.muted { color: var(--muted); margin: 0 0 16px; }
+
+#sources button, #custom button {
+  display: block;
+  width: 100%;
+  margin: 0 0 8px;
+  padding: 10px 12px;
+  border: 0;
+  border-radius: 10px;
+  background: var(--surface);
+  color: var(--text);
+  text-align: left;
+  cursor: pointer;
+}
+#sources button:hover, #custom button:hover { background: #22242d; }
+#custom { display: flex; gap: 8px; margin-top: 12px; }
+#custom input { flex: 1; padding: 8px 10px; border-radius: 10px; border: 1px solid #2a2c35; background: var(--surface); color: var(--text); }
+#custom button { width: auto; margin: 0; }
+#stats { display: grid; grid-template-columns: auto 1fr; gap: 4px 12px; margin-top: 16px; color: var(--muted); }
+#stats dd { margin: 0; color: var(--text); }
+
+/* Video hole: transparent itself, paints the rest of the window with a huge shadow. */
+#video {
+  position: absolute;
+  top: 24px;
+  right: 24px;
+  width: calc(60% - 48px);
+  aspect-ratio: 16 / 9;
+  border-radius: 14px;
+  box-shadow: 0 0 0 200vmax var(--bg);
+  z-index: 1;
+  transition: top .28s ease, right .28s ease, width .28s ease, height .28s ease, border-radius .28s ease;
+}
+#video.idle { background: var(--surface); }
+body.fullscreen #video { top: 0; right: 0; width: 100vw; height: 100vh; aspect-ratio: auto; border-radius: 0; }
+body.fullscreen #side { display: none; }
+body.selftest #video { transition: none; }
+
+#placeholder { position: absolute; inset: 0; display: grid; place-items: center; color: var(--muted); }
+#video:not(.idle) #placeholder { display: none; }
+
+#badge {
+  position: absolute; top: 12px; left: 12px;
+  padding: 6px 10px; border-radius: 8px;
+  background: rgba(0, 0, 0, .6); color: #fff; font-weight: 600;
+}
+
+#controls {
+  position: absolute; inset: auto 0 0 0;
+  padding: 24px 14px 10px;
+  background: linear-gradient(transparent, rgba(0, 0, 0, .75));
+  border-radius: 0 0 14px 14px;
+}
+body.fullscreen #controls { border-radius: 0; }
+#controls .row { display: flex; align-items: center; gap: 10px; }
+#controls .spacer { flex: 1; }
+#controls button { background: rgba(255, 255, 255, .12); color: #fff; border: 0; border-radius: 8px; padding: 6px 10px; cursor: pointer; }
+#controls select { background: rgba(0, 0, 0, .55); color: #fff; border: 1px solid rgba(255, 255, 255, .2); border-radius: 8px; padding: 4px; max-width: 150px; }
+#seek { width: 100%; accent-color: var(--accent); }
+#volume { width: 90px; accent-color: var(--accent); vertical-align: middle; }
+
+h2 { font-size: 15px; margin: 20px 0 8px; }
+#addonForm { display: flex; gap: 6px; }
+#addonForm input, #addonForm select { padding: 8px; border-radius: 10px; border: 1px solid #2a2c35; background: var(--surface); color: var(--text); }
+#addonForm input { flex: 1; min-width: 0; }
+#addonForm button { padding: 8px 12px; border: 0; border-radius: 10px; background: var(--accent); color: #fff; cursor: pointer; }
+#addonStreams { margin-top: 8px; }
+#addonStreams button { display: block; width: 100%; text-align: left; margin: 4px 0; padding: 8px 10px; border: 0; border-radius: 8px; background: var(--surface); color: var(--text); cursor: pointer; }
+#addonStreams button:disabled { opacity: .5; cursor: default; }

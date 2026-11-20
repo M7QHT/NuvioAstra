@@ -1,0 +1,12 @@
+[package]
+name = "nuvio-probe"
+description = "Validates the Nuvio Astra core against the real data and addons of the current Nuvio install (read-only)."
+edition.workspace = true
+version.workspace = true
+license.workspace = true
+publish.workspace = true
+
+[dependencies]
+nuvio-core = { path = "../../crates/nuvio-core" }
+nuvio-store = { path = "../../crates/nuvio-store" }
+tokio = { workspace = true }
