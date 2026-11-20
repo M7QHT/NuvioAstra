@@ -1,0 +1,89 @@
+# Feature Parity — Nuvio original (Kotlin, Windows) → Nuvio Astra (Windows x64)
+
+Nuvio Astra is the official name of the fork developed in `nextgen/` (called "NextGen" in the history
+below and in the column titles). Identity and technical names: `BRANDING.md`.
+
+Status: ✅ implemented and validated · 🟡 partial (what is missing is listed) · ⏳ not implemented ·
+➖ not applicable to Windows desktop. "Validated" means an automated test or a measured/visual
+check exists; a visual component alone never counts.
+
+Sources: `composeApp/src/commonMain/.../features/*` (module sizes in `AUDIT.md`), `PLAYER_PORT.md`.
+This file is updated at the end of every stage.
+
+## Foundations
+
+| Feature | Original | NextGen | Validation / test needed | Technical dependencies |
+|---|---|---|---|---|
+| Addon protocol: URLs, manifest, catalog | `features/addons`, `catalog` | ✅ | Rust contract tests mirrored from Kotlin (`url`, `manifest`, `catalog`) | `nuvio-core` |
+| Addon streams parsing | `StreamParser.kt` | ✅ | `stream` tests | `nuvio-core::stream` |
+| Addon meta (details, videos/episodes) | `MetaDetailsParser.kt` | ✅ | `meta` contract tests; first enabled addon serving `meta`, in order | `nuvio-core::meta` |
+| Reading current data (profiles, addons, enabled states) | `.properties` stores | ✅ read-only, for the migration only (NextGen owns profiles and addons since v4) | `nuvio-store` tests + probe on real data | `nuvio-store` |
+| Data migration to NextGen storage | — | ✅ verified backup + Live TV favorites (v1) + settings (v2) + saved items, watch progress and watched marks per profile (v3) + profiles and each profile's addons with enabled state (v4); each document imported only when NextGen has none for that profile; validated after the write (a document that fails validation is removed so the next start imports it again); transaction since stage 10: verified backup of the original's stores and of NextGen's own documents before any change, recovery journal (documents created but not validated by an interrupted run are removed and re-imported), durable writes (flushed before the atomic rename), version recorded last and read back; originals read-only. `.properties` read with a JDK-rules reader (the previous crate rejected emoji surrogate pairs in `nuvio_watch_progress`) | store tests (v1–v3, idempotence, no overwrite, URLs dropped), dry run on real data (nothing skipped), UI test on a copy of the real data, transaction tests (interruption, failure mid-way, destination backup, idempotence), faithful simulations of the next normal start outside the app package (`tools/migration-audit`) | `nuvio-store::nextgen`, `nuvio-store::properties` |
+| Addon management: list, install (address normalized like `normalizeManifestUrl`, manifest validated, duplicates refused, tracking addons need consent), enable/disable, reorder, refresh one, configure, remove | `AddonRepository`, `AddonsScreen`, `TrackingAddonConsentDialog` | ✅ Configurações → Addons, per profile (`addons-<p>.json`), profile with `uses_primary_addons` sees profile 1's list read-only; manifests cached by URL (a change fetches only new/re-enabled/failed ones; install reuses the previewed manifest); "Configurar" opens `<addon>/configure` in the browser, as the original (the original has no manifest-driven forms); manifest addresses never reach the UI (key + host). Synced with the Nuvio account (`sync_push_addons` / `addons` table, per profile; see `ACCOUNT_SYNC.md`) | `nuvio-core` URL tests, store tests, IPC contract test with a local addon server counting requests, UI phases `manage-write` 32/32 + `manage-verify` 16/16 on real addons | `manage.rs`, `nuvio-store::profiles`, `services/addons.rs` |
+
+## Navigation and screens
+
+| Feature | Original | NextGen | Validation / test needed | Dependencies |
+|---|---|---|---|---|
+| Sidebar (Início, **TV**, Buscar, Biblioteca, Configurações, perfil) | `DesktopHoverSidebar` | ✅ Início, TV, Buscar, Biblioteca; Configurações and the profile avatar (opens the profile switcher) at the bottom | UI tests (order, highlight, switcher) | React shell |
+| Home: catalog rows from enabled addons, user order/visibility/custom titles, hero on/off, type in titles, hide unreleased | `HomeRepository`, `HomeCatalogSettingsRepository` | ✅ lazy rows, paging, session cache; settings editable in Configurações → Início (NextGen store, imported from the original) | `home` tests (defaults, order/hide/rename, unreleased rule), `settings_set` IPC test, UI test (hero off reaches Home) | `nuvio-core`, `nuvio-store` |
+| Home hero, continue watching, collections/folders | `home`, `collection` | 🟡 hero ✅; Continue watching row ✅ (in-progress entries, original rule; next-up of the following episode ⏳); collections ⏳ | UI test (row after restart, click → resume) | watch progress |
+| Catalog page (paging, genre filter) | `CatalogScreen` | ⏳ | paging tests | `nuvio-core` |
+| Search (addon search catalogs, history) | `SearchRepository` | 🟡 search ✅ (debounced, concurrent, stale answers dropped); history ⏳ | `search` test (only search-capable catalogs, encoding) | `nuvio-core` |
+| Discover (type/catalog/genre browser) | `SearchDiscoverContent` | ⏳ | — | — |
+| Details: info, images, genres, year, rating, age rating, runtime, status, cast, direction, writers, country, language, awards, website | `MetaDetailsScreen` | ✅ from Home, Search and Library; save button; movie progress / "Continuar de" / "Assistir do início"; per-episode progress and ✓ watched; series resume button. No "original title" field exists in the original's model | `meta` tests, `meta_details` IPC contract test, UI tests (details, library-write/verify) | meta port |
+| Seasons and episodes | `SeriesSeasonSupport` | ✅ seasons (specials last), episodes with thumbnail/date/overview | `meta` seasons test | meta port |
+| Source selection (streams per addon, kinds) | `StreamsScreen` | 🟡 per-addon list, direct play; other kinds listed as not playable yet, with the reason; badges, filters, autoplay ⏳ | `streams` tests | `nuvio-core::stream` |
+| Live TV tab (categories, search, favorites, preview, fullscreen, resolve on click only) | `features/livetv` (added in the Kotlin app) | 🟡 all listed features implemented; resolution asks only the channel's addon, on click; favorites persisted per profile (migrated keys). Automated UI test ⏳ | `livetv` tests (merge, categories, key split), store tests | channel catalogs |
+| Library, favorites, watched, history | `library`, `watched`, `watchprogress` | ✅ local mode: Biblioteca (Continuar assistindo, Favoritos with the original's local sorts + type filter, Histórico paged); save/remove from cards, Search, Details and the Library, synced at once; identity = addon type + id (as the original); progress per movie/episode (key `<id>` / `<id>_s<S>e<E>`), saved off the player thread at the original's moments; completion = end of file or ≥ 90 %, placeholder clips < 121 s ignored; completed → watched mark; per profile. Nuvio account sync (saved items, progress, watched: snapshot + delta, offline queue, original conflict rules) ✅; Trakt/Simkl, lists, next-up ⏳ | store tests (rules, episodes, CW, history, favorites per profile), tracker tests, IPC contract test, UI phases `library-write` 70/70 + `library-verify` 10/10 | `nuvio-store::library`, `services/progress.rs` |
+| Settings pages | `settings` (24k lines) | 🟡 Configurações with Início, Reprodução (image mode, decoder, RTX VSR/HDR), Áudio (preferred/secondary language), Legendas (languages + style), Perfil e dados; all per profile as in the original, stored in `settings.json`, imported by migration v2. Other original pages listed as not available (no controls) | store tests (ranges, migration v2), `settings_set` IPC test, UI test phases write → player properties → restart → restore | `nuvio-store::settings`, `services/playback.rs` |
+| Profiles: list, switch, create, edit (name, color, use primary addons), delete | `ProfileRepository`, `ProfileEditScreen`, `ProfileSwitcherTab` | ✅ local rules of the original: max 6, lowest free index, profile 1 cannot be deleted, delete removes the profile's data (NextGen keeps a verified backup); switch without restart: player closed first (progress saved for its profile), addon list/stream keys/pending install invalidated, every UI cache dropped by a data epoch, late answers of the previous profile ignored. Avatars from the account's catalog ✅; PIN ✅ (validated by the server, offline only with a salted hash, enforced in Rust); profiles synced with the account ✅ | store tests, IPC contract test, UI phases (switch during playback, data isolation, restart, create/use/delete) | `nuvio-store::profiles`, `manage.rs`, `ProfileMenu.tsx` |
+| Account / auth (e-mail + password, create account, refresh, sign-out) | `core/auth` | ✅ same Supabase project; session only in Rust, DPAPI-encrypted `account.dat`; anon key only (build refuses others). Anonymous sign-in, TV/QR link ⏳ | `nuvio-sync` contract tests with a mock Supabase (8/8), UI `account-ui` 11/11 + `account-verify` 3/3 | `crates/nuvio-sync` |
+| Cloud sync (profiles, addons, saved items, progress, watched) | `core/sync`, `*SyncService` | ✅ original RPCs and conflict rules; initial snapshot + incremental delta; offline queue with revisions (idempotent); per profile; first link joins both sides; status indicator, last sync, "Sincronizar agora"; first link only after a read-only preview the user confirms (stage 13, done with the real account); Settings → Conta shows account, state, last sync and "Sincronizar agora", technical data under "Ver detalhes". Settings blob, collections, realtime ⏳ | contract tests (join, deltas, deletes, conflicts, offline, retry, other account) | `nuvio-store::sync_state`, `ACCOUNT_SYNC.md` |
+| Profile PIN, avatars | `ProfilePinDialog`, `AvatarRepository` | ✅ 4-digit PIN via `verify_profile_pin`/`set_profile_pin`/`clear_profile_pin`, server lockout shown; avatar catalog `get_avatar_catalog` (cached) | contract test (online/offline/lockout), IPC test (PIN gate), UI test (42 avatars, saved, sidebar image) | `nuvio-sync`, `account.rs` |
+
+## Player (see `PLAYER_PORT.md` for the per-option table)
+
+| Feature | NextGen | Validation |
+|---|---|---|
+| Embedded libmpv, preview / fullscreen / resize / maximize, overlay controls | ✅ | 62 visual checks (frame change), 161/161 media checks |
+| Hardware decoding, decoder priority, fast profile | ✅ | self-test `d3d11va` on H.264/HEVC/4K |
+| Headers (Referer, Cookie, UA, tokens) | ✅ | local proxy end-to-end |
+| Audio tracks / languages, subtitles (style, add/remove, delay, visibility, SDH) | ✅ | self-test |
+| Audio delay (new on Windows), speed, exact seek, volume 0–200, resize modes | ✅ | self-test |
+| Picture-in-picture | ✅ | self-test |
+| RTX VSR / HDR | 🟡 options ported, not exercised on video | needs RTX run |
+| Resume position | ✅ start position from the saved progress (Details / Continue watching → chosen source) | UI test: resumed at 305 s (saved 304 s) |
+| Chapters / skip intro / next episode | ⏳ postponed on purpose (stage 14) | skip API, meta videos |
+| Source fallback / autoplay | ⏳ postponed on purpose (stage 14) | `StreamAutoPlaySelector` port |
+| Subtitle auto-sync | ⏳ postponed on purpose (stage 14) | `autosync` (9k lines) |
+| Addon subtitles | ⏳ | subtitles resource |
+| Keyboard shortcuts | ⏳ | `controls.js` bindings |
+| Watch party | ⏳ | Supabase realtime |
+| Torrent / P2P (addon `infoHash` / magnet sources) | ✅ the original's Nuvio Engine 0.1.6 (`nuvio_engine.dll`, libtorrent 2.0.12) loaded by Rust (`crates/nuvio-p2p`, C ABI taken from the original's JVM binding); local HTTP route played by the app's libmpv; playback starts before the download ends, seeking fetches pieces on demand; file by `fileIdx` / `behaviorHints.filename` / engine choice; original default trackers + the stream's; peers, speed, downloaded, progress over the player; per-profile settings (off until the original's P2P notice is accepted, upload, hide stats, Soft/Balanced/Fast, cache 0/2/5/10 GB, clear cache); session ends with the player (stream stopped, torrent removed, engine destroyed). Torrent upload of `.torrent` files ⏳ | UI phase `p2p` 17/17 (Big Buck Bunny, CC BY: started at 17.6 % downloaded, seek to 7 min, sockets/threads back to the baseline after close); installed build `install-check` (engine found next to the exe and created) |
+| Debrid | ⏳ | Real-Debrid / Premiumize / TorBox APIs |
+| YouTube trailers ("Assistir trailer" on movie and series details) | ✅ addon meta `trailers` (`MetaDetailsParser`), choice of `selectHeroTrailer`, the original's in-app InnerTube extractor ported (`nuvio-core::youtube`: visionOS/Android/iOS clients, candidate ordering, `googlevideo` range probe); MP4 video + M4A audio in the app's player (separate audio file); resolved only on click, no autoplay, not saved to history/progress; HLS master only as a fallback (libmpv did not play YouTube's HLS here) | UI phase `trailer` 16/16 (one movie, one series: picture + audio, back to the details, counts unchanged) |
+| YouTube addon streams (`ytId` sources) | ⏳ | same resolver, not wired to the sources list yet |
+
+## Integrations
+
+| Feature | NextGen | Notes |
+|---|---|---|
+| Trakt, Simkl, MDBList, TMDB enrichment | ⏳ | OAuth clients need the private client ids (not in the public repo) |
+| Media servers (Plex, Emby/Jellyfin, Silo) | ⏳ | — |
+| Downloads | ⏳ | — |
+| Notifications | ➖ disabled on desktop in the original (`notificationsEnabled=false`) | |
+| Updater | ➖ disabled in this custom build | |
+| Android/iOS specifics (PiP system API, Infuse, ExoPlayer) | ➖ | Windows-only project |
+
+## Strategy for the pending modules (priority order)
+
+1. **Daily use first**: Home rows, search, details + episodes, streams → player, Live TV, favorites,
+   resume position, keyboard shortcuts.
+2. **Data**: verified import of the current stores into NextGen storage (originals untouched), then
+   write paths (addons, settings, favorites, history).
+3. **Playback extras**: next episode, chapters/skip intro, source fallback, addon subtitles.
+4. **Heavy modules**: debrid (HTTP APIs), YouTube addon streams, watch party, subtitle auto-sync
+   (account/sync done in stage 12, torrent/P2P and YouTube trailers in stage 14).
+None of them is simulated: until a module is ported, its stream kinds stay marked "not playable
+yet" and its screens are absent.

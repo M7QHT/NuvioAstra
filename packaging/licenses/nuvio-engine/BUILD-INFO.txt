@@ -1,0 +1,10 @@
+Nuvio Engine: 0.1.6
+Target: Windows x86_64
+Minimum OS: Windows 10
+Runtime: UCRT
+Libtorrent: 2.0.12 commit 740a0b9aeabe00e762cc0efe4a0f27593db2550b
+Boost: 1.86.0 sha256 1bed88e40401b2cb7a1f76d4bab499e352fa4d0c5f31c0dbae64e24d34d7513b
+OpenSSL: 3.5.7 sha256 a8c0d28a529ca480f9f36cf5792e2cd21984552a3c8e4aa11a24aa31aeac98e8
+llvm-mingw: 20260407 LLVM (https://github.com/llvm/llvm-project.git UCRT
+CMake: 3.31.12
+Builder base: ubuntu:22.04@sha256:0e0a0fc6d18feda9db1590da249ac93e8d5abfea8f4c3c0c849ce512b5ef8982

@@ -1,0 +1,20 @@
+[package]
+name = "nuvio-sync"
+description = "Nuvio Astra account: Supabase auth, protected session, profile PIN/avatars and data sync (contracts of Nuvio Desktop)."
+edition.workspace = true
+version.workspace = true
+license.workspace = true
+publish.workspace = true
+
+[dependencies]
+nuvio-core = { path = "../nuvio-core" }
+nuvio-store = { path = "../nuvio-store" }
+serde = { workspace = true }
+serde_json = { workspace = true }
+thiserror = { workspace = true }
+tokio = { workspace = true }
+reqwest = { workspace = true }
+windows = { version = "0.62", features = ["Win32_Foundation", "Win32_Security_Cryptography"] }
+
+[dev-dependencies]
+tokio = { workspace = true }

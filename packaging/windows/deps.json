@@ -1,0 +1,16 @@
+{
+  "_comment": "Native libraries shipped with the Windows build, pinned by SHA-256. The release workflow downloads them and refuses any other file.",
+  "nuvioEngine": {
+    "version": "0.1.6",
+    "url": "https://github.com/NuvioMedia/nuvio-engine/releases/download/v0.1.6/nuvio-engine-windows-x86_64-0.1.6.zip",
+    "zipSha256": "0f7f6b7921f8db103c55f573044ed4da340aacd3bf5db7a92291682a2024c58e",
+    "dllPath": "nuvio-engine-windows-x86_64/bin/nuvio_engine.dll",
+    "dllSha256": "84a149c16bea5ac376a7468c61c7bb2d5f3d8fc8e1b74a7980af2edd8f426743"
+  },
+  "libmpv": {
+    "version": "mpv v0.40.0-465-gf6c116491 (the build Nuvio Desktop ships)",
+    "releaseTag": "deps-libmpv",
+    "asset": "libmpv-2.dll",
+    "sha256": "07c68bb211f23a218ded0a36eb12207dc3aeb44e5318ffca6ce9dcc7c3173906"
+  }
+}

@@ -1,0 +1,7 @@
+﻿"label","run","window_shown_ms","processes_in_tree","working_set_mb","private_bytes_mb","idle_cpu_percent_total","idle_seconds","logical_cores"
+"official-0.1.38","1","2579","2","525","722,5","0,68","45,1","12"
+"official-0.1.38","2","2674","2","494,6","690","0,85","45,1","12"
+"local-build-tv","1","5431","2","697,9","719,7","1,45","45,1","12"
+"local-build-tv","2","2801","2","700,6","736,2","0,74","45,1","12"
+"nextgen-shell-player-spike","1","753","7","330,1","157,7","0,09","45,1","12"
+"nextgen-shell-player-spike","2","149","7","331,5","158,4","0,02","45,1","12"

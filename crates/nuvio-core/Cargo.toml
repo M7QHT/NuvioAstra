@@ -1,0 +1,17 @@
+[package]
+name = "nuvio-core"
+description = "Nuvio Astra core: Stremio addon protocol, models and HTTP client (UI-free)."
+edition.workspace = true
+version.workspace = true
+license.workspace = true
+publish.workspace = true
+
+[dependencies]
+serde = { workspace = true }
+serde_json = { workspace = true }
+thiserror = { workspace = true }
+tokio = { workspace = true }
+reqwest = { workspace = true }
+
+[dev-dependencies]
+tokio = { workspace = true }

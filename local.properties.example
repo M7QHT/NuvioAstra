@@ -1,0 +1,13 @@
+# Copy to `local.properties` (never committed) for LOCAL builds. Release builds made by GitHub Actions
+# read the same names from the repository's Secrets and Variables instead (see GITHUB_PUBLISH.md).
+# Every value is optional: without them the app builds and runs, only the related feature is off.
+
+# Nuvio account server (Supabase). Only a PUBLIC key is accepted (role "anon" or "sb_publishable_");
+# the build refuses service keys. Without these, Settings → Conta says the account is unavailable.
+NUVIO_SUPABASE_URL=
+NUVIO_SUPABASE_ANON_KEY=
+NUVIO_SUPABASE_FALLBACK_URL=
+
+# GitHub repository whose releases the app follows for automatic updates (owner/repo).
+# Release builds get it automatically; set it here only for a local build that should update itself.
+NUVIO_UPDATE_REPOSITORY=
