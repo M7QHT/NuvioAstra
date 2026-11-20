@@ -139,7 +139,6 @@ v0.1.6 do projeto NuvioMedia/nuvio-engine e confere o SHA-256.
 3. Em **Releases** aparece **Nuvio Astra 0.1.1** (o número final é o número da execução) com:
    - `Nuvio-Astra-0.1.1-x64-setup.exe` — instalador (também é o pacote de atualização);
    - `Nuvio-Astra-0.1.1-x64-setup.exe.sig` — assinatura;
-   - `Nuvio-Astra-0.1.1-x64-portable.zip` — versão portátil;
    - `latest.json` — manifesto lido pelo aplicativo;
    - `SHA256SUMS.txt` — checksums;
    - notas da versão (mensagens dos commits).
