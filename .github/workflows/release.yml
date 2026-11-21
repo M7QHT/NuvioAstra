@@ -16,6 +16,12 @@ name: Release (Windows x64)
 on:
   push:
     branches: [main]
+    # Documentation-only commits do not publish a new version.
+    paths-ignore:
+      - "README.md"
+      - "GITHUB_PUBLISH.md"
+      - "docs/**"
+      - "LICENSE"
   workflow_dispatch:
 
 permissions:
