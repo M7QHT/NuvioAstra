@@ -2,6 +2,7 @@
 //! No UI code and no Tauri commands here (those live in `api.rs`).
 
 pub mod addons;
+pub mod epg;
 pub mod home;
 pub mod language_aliases;
 pub mod livetv;

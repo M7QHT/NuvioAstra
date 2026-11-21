@@ -223,3 +223,7 @@ export interface SyncPreview {
 export interface UpdateStatus { configured: boolean; currentVersion: string; repository: string | null }
 export interface UpdateInfo { version: string; currentVersion: string; notes: string | null; date: string | null }
 export interface UpdateProgress { phase: "downloading" | "verifying" | "installing" | "error"; downloaded: number; total: number | null; error: string | null }
+
+/** Program guide of a live channel (times in UTC ms). */
+export interface EpgProgram { startMs: number; endMs: number; title: string; description: string | null }
+export interface EpgView { nowMs: number; programs: EpgProgram[]; hasSchedule: boolean }

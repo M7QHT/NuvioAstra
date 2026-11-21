@@ -486,6 +486,7 @@ mod ipc_tests {
             p2p_session: Default::default(),
             youtube: nuvio_core::youtube::Extractor::new().unwrap(),
             updates: Default::default(),
+            epg: Default::default(),
         };
         let app = mock_builder()
             .manage(state)

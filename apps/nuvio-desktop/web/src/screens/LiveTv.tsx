@@ -1,9 +1,12 @@
-// Live TV: channels from the addons' `tv` catalogs, dynamic categories, search, favorites,
-// preview and fullscreen. A channel's stream is resolved only when the user clicks it, and only
+// Live TV: channels from the addons' `tv` catalogs. Layout: search, addon picker and reload on top;
+// categories (vertical) | channels of the category (vertical) | preview with the program guide.
+// Favorites, preview and fullscreen. A channel's stream is resolved only when the user clicks it, and only
 // the addon that listed it is asked (no prefetch, no bulk checks). One player session at a time.
 
-import { useEffect, useMemo, useRef, useState, type PointerEvent as ReactPointerEvent, type ReactNode } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { api, dataEpoch, errorText, onDataEpoch } from "../api";
+import { AddonPicker } from "../components/AddonPicker";
+import { EpgGuide } from "../components/EpgGuide";
 import { usePlayer } from "../player/PlayerContext";
 import { PlayerControls } from "../player/PlayerControls";
 import { PlayerSurface } from "../player/PlayerSurface";
@@ -12,91 +15,30 @@ import type { Channel, ChannelList } from "../types";
 const ALL = "__all__";
 const FAVORITES = "__favorites__";
 
+// Chosen channel addons, remembered between visits: `null` = all of them (including addons that
+// appear later), otherwise exactly the checked ones (an empty list shows no channel).
+const ADDONS_KEY = "nuvio.livetv.addons.v2";
+function loadAddons(): string[] | null {
+  try {
+    const v = JSON.parse(localStorage.getItem(ADDONS_KEY) ?? "null");
+    return Array.isArray(v) ? v.filter((x) => typeof x === "string") : null;
+  } catch {
+    return null;
+  }
+}
+function saveAddons(v: string[] | null) {
+  try {
+    localStorage.setItem(ADDONS_KEY, JSON.stringify(v));
+  } catch {
+    /* not persisted: still applied for this visit */
+  }
+}
+
 let channelsCache: ChannelList | null = null;
 // Channels belong to the profile's addons: dropped on a profile or addon change.
 onDataEpoch(() => {
   channelsCache = null;
 });
-
-/** Horizontal strip that scrolls with the mouse wheel and by dragging (as asked for the original). */
-function DragScroll({ children }: { children: ReactNode }) {
-  const ref = useRef<HTMLDivElement>(null);
-  const drag = useRef<{ x: number; left: number; moved: boolean } | null>(null);
-  const onDown = (e: ReactPointerEvent) => {
-    if (e.button !== 0 || !ref.current) return;
-    drag.current = { x: e.clientX, left: ref.current.scrollLeft, moved: false };
-  };
-  const onMove = (e: ReactPointerEvent) => {
-    const d = drag.current;
-    if (!d || !ref.current) return;
-    const dx = e.clientX - d.x;
-    if (Math.abs(dx) > 4) {
-      d.moved = true;
-      ref.current.setPointerCapture(e.pointerId);
-    }
-    ref.current.scrollLeft = d.left - dx;
-  };
-  const onUp = (e: ReactPointerEvent) => {
-    if (drag.current?.moved) {
-      // A drag is not a click on the chip below the pointer.
-      const swallow = (ev: Event) => { ev.stopPropagation(); ev.preventDefault(); };
-      ref.current?.addEventListener("click", swallow, { capture: true, once: true });
-    }
-    drag.current = null;
-    ref.current?.releasePointerCapture?.(e.pointerId);
-  };
-  const [edges, setEdges] = useState({ left: false, right: false });
-  const update = () => {
-    const el = ref.current;
-    if (!el) return;
-    const left = el.scrollLeft > 4;
-    const right = el.scrollLeft + el.clientWidth < el.scrollWidth - 4;
-    setEdges((prev) => (prev.left === left && prev.right === right ? prev : { left, right }));
-  };
-  useEffect(() => {
-    const el = ref.current;
-    if (!el) return;
-    update();
-    // Width of the strip or of its content changes (window resize, categories loaded).
-    const ro = new ResizeObserver(update);
-    ro.observe(el);
-    const mo = new MutationObserver(() => {
-      Array.from(el.children).forEach((c) => ro.observe(c));
-      update();
-    });
-    mo.observe(el, { childList: true });
-    Array.from(el.children).forEach((c) => ro.observe(c));
-    return () => {
-      ro.disconnect();
-      mo.disconnect();
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-  const step = (dir: number) => ref.current?.scrollBy({ left: dir * ref.current.clientWidth * 0.7, behavior: "smooth" });
-  useEffect(() => {
-    const el = ref.current;
-    if (!el) return;
-    const onWheel = (e: WheelEvent) => {
-      if (Math.abs(e.deltaY) > Math.abs(e.deltaX)) {
-        e.preventDefault();
-        el.scrollBy({ left: e.deltaY, behavior: "smooth" });
-      }
-    };
-    el.addEventListener("wheel", onWheel, { passive: false });
-    return () => el.removeEventListener("wheel", onWheel);
-  }, []);
-  return (
-    <div className="chip-strip">
-      <button className="strip-arrow" aria-label="Categorias anteriores" onClick={() => step(-1)} disabled={!edges.left} tabIndex={edges.left ? 0 : -1}>‹</button>
-      <div className={`chip-viewport ${edges.left ? "more-left" : ""} ${edges.right ? "more-right" : ""}`}>
-        <div className="drag-scroll" ref={ref} onScroll={update} onPointerDown={onDown} onPointerMove={onMove} onPointerUp={onUp} onPointerCancel={onUp}>
-          {children}
-        </div>
-      </div>
-      <button className="strip-arrow" aria-label="Mais categorias" onClick={() => step(1)} disabled={!edges.right} tabIndex={edges.right ? 0 : -1}>›</button>
-    </div>
-  );
-}
 
 export function LiveTv() {
   const player = usePlayer();
@@ -104,10 +46,16 @@ export function LiveTv() {
   const [error, setError] = useState<string | null>(null);
   const [favorites, setFavorites] = useState<string[]>([]);
   const [category, setCategory] = useState(ALL);
+  const [addons, setAddonsState] = useState<string[] | null>(loadAddons);
+  const setAddons = (v: string[] | null) => {
+    setAddonsState(v);
+    saveAddons(v);
+  };
   const [query, setQuery] = useState("");
   const [current, setCurrent] = useState<Channel | null>(null);
   const [resolving, setResolving] = useState(false);
   const [channelError, setChannelError] = useState<string | null>(null);
+  const [reloading, setReloading] = useState(false);
   const request = useRef(0);
 
   useEffect(() => {
@@ -125,9 +73,40 @@ export function LiveTv() {
   }, []);
 
   const favoriteSet = useMemo(() => new Set(favorites), [favorites]);
+
+  // Addons that provided channels (only those can be chosen), with their channel counts.
+  const addonOptions = useMemo(() => {
+    const counts = new Map<string, number>();
+    for (const c of list?.channels ?? []) counts.set(c.addonName, (counts.get(c.addonName) ?? 0) + 1);
+    return [...counts.entries()].sort((a, b) => a[0].localeCompare(b[0], "pt-BR"));
+  }, [list]);
+  // A remembered addon that no longer provides channels is ignored.
+  // A remembered choice whose addons no longer provide channels falls back to all of them.
+  const activeAddons = useMemo(() => {
+    if (addons === null) return null;
+    const known = addons.filter((a) => addonOptions.some(([n]) => n === a));
+    return addons.length > 0 && known.length === 0 ? null : known;
+  }, [addons, addonOptions]);
+  // Channels of the chosen addons: categories, counts and favorites are all computed from them.
+  const pool = useMemo(
+    () => (list?.channels ?? []).filter((c) => activeAddons === null || activeAddons.includes(c.addonName)),
+    [list, activeAddons],
+  );
+  const categories = useMemo(() => {
+    const counts = new Map<string, number>();
+    for (const c of pool) for (const g of c.genres.length ? c.genres : ["Outros"]) counts.set(g, (counts.get(g) ?? 0) + 1);
+    // Same order as the full list.
+    return (list?.categories ?? []).filter(([name]) => counts.has(name)).map(([name]) => [name, counts.get(name)!] as [string, number]);
+  }, [pool, list]);
+  const favoriteCount = useMemo(() => pool.filter((c) => favoriteSet.has(c.key)).length, [pool, favoriteSet]);
+  useEffect(() => {
+    // The chosen category is not offered by the chosen addons: back to "Todos".
+    if (category !== ALL && category !== FAVORITES && !categories.some(([n]) => n === category)) setCategory(ALL);
+  }, [categories, category]);
+
   const visible = useMemo(() => {
     const q = query.trim().toLowerCase();
-    return (list?.channels ?? []).filter((c) => {
+    return pool.filter((c) => {
       if (category === FAVORITES && !favoriteSet.has(c.key)) return false;
       if (category !== ALL && category !== FAVORITES) {
         const cats = c.genres.length ? c.genres : ["Outros"];
@@ -135,7 +114,7 @@ export function LiveTv() {
       }
       return !q || c.name.toLowerCase().includes(q) || c.genres.some((g) => g.toLowerCase().includes(q));
     });
-  }, [list, category, query, favoriteSet]);
+  }, [pool, category, query, favoriteSet]);
 
   const embedded = player.session?.view === "embedded";
 
@@ -176,6 +155,25 @@ export function LiveTv() {
     }
   };
 
+  /** Fetches again the manifests and channels of the chosen channel addons (all when none chosen). */
+  const reload = async () => {
+    setReloading(true);
+    setError(null);
+    const epoch = dataEpoch();
+    try {
+      const l = await api.liveTvReload(activeAddons && activeAddons.length ? activeAddons : null);
+      if (epoch !== dataEpoch()) return;
+      channelsCache = l;
+      setList(l);
+    } catch (e) {
+      setChannelError(`Não foi possível recarregar: ${errorText(e)}`);
+    } finally {
+      setReloading(false);
+    }
+  };
+
+  const categoryTitle = category === ALL ? "Todos os canais" : category === FAVORITES ? "Favoritos" : category;
+
   const goFullscreen = async () => {
     if (!player.session) return;
     player.setView("full");
@@ -186,29 +184,52 @@ export function LiveTv() {
   return (
     <div className="livetv">
       <header className="livetv-header">
-        <div className="search-bar">
+        <div className="search-bar livetv-search">
           <input type="search" placeholder="Buscar canal ou categoria" value={query} onChange={(e) => setQuery(e.target.value)} aria-label="Buscar canal" />
+          <AddonPicker options={addonOptions} selected={activeAddons} onChange={setAddons} />
+          <button
+            className={`livetv-reload ${reloading ? "spinning" : ""}`}
+            onClick={() => void reload()}
+            disabled={reloading || !list}
+            title={activeAddons && activeAddons.length ? "Recarregar os addons selecionados" : "Recarregar os addons de canais"}
+            aria-label="Recarregar addons de canais"
+            data-testid="livetv-reload"
+          >
+            <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M20 11a8 8 0 0 0-14.6-4.5L4 8" /><path d="M4 3v5h5" /><path d="M4 13a8 8 0 0 0 14.6 4.5L20 16" /><path d="M20 21v-5h-5" />
+            </svg>
+          </button>
         </div>
-        <DragScroll>
-          <button className={`chip ${category === ALL ? "active" : ""}`} onClick={() => setCategory(ALL)}>
-            Todos {list && <span className="count">{list.channels.length}</span>}
-          </button>
-          <button className={`chip ${category === FAVORITES ? "active" : ""}`} onClick={() => setCategory(FAVORITES)}>
-            ★ Favoritos <span className="count">{favorites.length}</span>
-          </button>
-          {list?.categories.map(([name, count]) => (
-            <button key={name} className={`chip ${category === name ? "active" : ""}`} onClick={() => setCategory(name)}>
-              {name} <span className="count">{count}</span>
-            </button>
-          ))}
-        </DragScroll>
       </header>
 
+      <nav className="livetv-categories" aria-label="Categorias de canais">
+        <button className={`cat-item ${category === ALL ? "active" : ""}`} onClick={() => setCategory(ALL)}>
+          <span className="cat-name">Todos</span> {list && <span className="count">{pool.length}</span>}
+        </button>
+        <button className={`cat-item ${category === FAVORITES ? "active" : ""}`} onClick={() => setCategory(FAVORITES)}>
+          <span className="cat-name">★ Favoritos</span> <span className="count">{favoriteCount}</span>
+        </button>
+        <div className="cat-divider" aria-hidden />
+        {categories.map(([name, count]) => (
+          <button key={name} className={`cat-item ${category === name ? "active" : ""}`} onClick={() => setCategory(name)} title={name}>
+            <span className="cat-name">{name}</span> <span className="count">{count}</span>
+          </button>
+        ))}
+      </nav>
+
       <div className="channel-list" role="list">
+        <div className="channel-list-title">
+          <span>{categoryTitle}</span>
+          <span className="muted small">{visible.length} canais</span>
+        </div>
         {!list && <div className="screen-message">Carregando canais…</div>}
         {list && !visible.length && (
           <div className="screen-message muted">
-            {list.channels.length ? "Nenhum canal neste filtro." : "Nenhum addon instalado fornece canais de TV."}
+            {!list.channels.length
+              ? "Nenhum addon instalado fornece canais de TV."
+              : activeAddons !== null && activeAddons.length === 0
+                ? "Nenhum addon de canais selecionado. Escolha um ou mais no seletor ao lado da busca."
+                : "Nenhum canal neste filtro."}
           </div>
         )}
         {visible.map((c) => (
@@ -217,7 +238,7 @@ export function LiveTv() {
               <span className="channel-logo">{c.logo ? <img src={c.logo} alt="" loading="lazy" decoding="async" /> : c.name.slice(0, 2)}</span>
               <span className="channel-text">
                 <span className="channel-name">{c.name}</span>
-                <span className="muted small">{(c.genres[0] ?? "Outros") + " · " + c.addonName}</span>
+                <span className="muted small">{c.addonName}</span>
               </span>
             </button>
             <button
@@ -262,8 +283,9 @@ export function LiveTv() {
               </div>
               {resolving && <div className="muted">Resolvendo o stream deste canal…</div>}
               {(channelError || player.error) && <div className="row-error">{channelError ?? `Falha ao reproduzir: ${player.error}`}</div>}
-              {/* Reserved for the program guide (EPG). */}
-              <div className="preview-epg" data-testid="preview-epg" />
+              <div className="preview-epg" data-testid="preview-epg">
+                <EpgGuide channelKey={current.key} />
+              </div>
             </>
           ) : (
             <div className="muted">Os streams são resolvidos somente ao escolher um canal.</div>

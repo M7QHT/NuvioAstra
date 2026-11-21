@@ -332,19 +332,18 @@ export function Settings() {
 
         {section === "pending" && (
           <div className="settings-group">
-            <p className="muted">Estas páginas existem no Nuvio original e dependem de módulos que o Nuvio Astra ainda não tem. Elas aparecerão aqui quando o módulo correspondente for portado — nenhuma opção fica visível sem funcionar.</p>
+            <p className="muted">Recursos do Nuvio original que o Nuvio Astra ainda não tem. Eles aparecem nas Configurações quando forem adicionados — nenhuma opção fica visível sem funcionar.</p>
             <ul className="pending-list">
-              <li><b>Aparência</b> — temas, AMOLED, layout da navegação, estilo dos cards de pôster.</li>
-              <li><b>Tela de detalhes</b> — seções exibidas, trailers, títulos semelhantes.</li>
+              <li><b>Tela de detalhes</b> — escolher as seções exibidas, títulos semelhantes.</li>
               <li><b>Continuar assistindo</b> — estilo, ordenação e ação do clique (a fileira em si já funciona).</li>
-              <li><b>Fontes e reprodução automática</b> — autoplay, regex, fallback de fontes, reutilizar último link.</li>
-              <li><b>Pular introdução / próximo episódio</b> — AnimeSkip, IntroDB, limite do próximo episódio.</li>
-              <li><b>Buffer e cache</b>, <b>áudio avançado</b> (amplificação, downmix).</li>
-              <li><b>Debrid</b>.</li>
-              <li><b>Adiados nesta etapa</b>: próximo episódio automático, pular introdução e créditos, troca automática de fontes e sincronização automática de legendas.</li>
+              <li><b>Fontes e reprodução automática</b> — autoplay, filtros por regex, troca automática de fontes, reutilizar o último link.</li>
+              <li><b>Próximo episódio e pular introdução/créditos</b> — próximo episódio automático, AnimeSkip, IntroDB.</li>
+              <li><b>Legendas</b> — legendas dos addons e sincronização automática.</li>
+              <li><b>Buffer e cache do player</b>, <b>áudio avançado</b> (amplificação, downmix).</li>
+              <li><b>Debrid</b> — Real-Debrid, Premiumize, TorBox.</li>
               <li><b>Integrações</b> — Trakt, Simkl, MDBList, TMDB; <b>servidores de mídia</b> (Plex, Jellyfin/Emby, Silo).</li>
               <li><b>Plugins</b>, avatares exclusivos de membros, Watch Party e entrar com outro dispositivo (QR).</li>
-              <li>Sincronização de preferências de aparência e do player com outros aparelhos, credenciais de provedores, coleções; Discord Rich Presence, idioma do aplicativo.</li>
+              <li>Sincronizar as preferências do player com outros aparelhos, credenciais de provedores, coleções; Discord Rich Presence, idioma do aplicativo.</li>
             </ul>
           </div>
         )}

@@ -1,5 +1,6 @@
 import { invoke } from "./tauri";
 import type {
+  EpgView,
   UpdateInfo,
   UpdateStatus,
   P2pStatus,
@@ -142,6 +143,10 @@ export const api = {
   /** Starts the P2P engine for a torrent stream (rejects with `P2P_CONSENT_REQUIRED` while P2P is off). */
   torrentPrepare: (key: string) => invoke<TorrentPrepared>("torrent_prepare", { key }),
   torrentStop: () => invoke<void>("torrent_stop"),
+  /** Program guide of one channel (cached in Rust until the current program ends). */
+  liveTvEpg: (key: string, tzOffsetMinutes: number) => invoke<EpgView>("livetv_epg", { key, tzOffsetMinutes }),
+  /** Fetches again the manifests and channels of the channel addons (all, or the ones named). */
+  liveTvReload: (addonNames: string[] | null) => invoke<ChannelList>("livetv_reload", { addonNames }),
   updateStatus: () => invoke<UpdateStatus>("update_status"),
   /** Asks the release endpoint for a newer version (nothing downloaded). */
   updateCheck: () => invoke<UpdateInfo | null>("update_check"),

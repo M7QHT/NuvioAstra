@@ -59,6 +59,8 @@ pub struct AppState {
     pub youtube: nuvio_core::youtube::Extractor,
     /// Update found by the last check (official Tauri updater).
     pub updates: updater::UpdateState,
+    /// Program guides of the live channels opened (memory only, bounded).
+    pub epg: services::epg::EpgStore,
 }
 
 #[derive(Debug, Deserialize)]
@@ -423,6 +425,7 @@ fn main() {
                 p2p_session: AtomicU64::new(0),
                 youtube: nuvio_core::youtube::Extractor::new().expect("HTTP client"),
                 updates: Default::default(),
+                epg: Default::default(),
             }
         })
         // Official Tauri 2 updater: public key from tauri.conf.json, endpoint set per build.
@@ -442,12 +445,15 @@ fn main() {
             api::home_rows,
             api::catalog_page,
             api::search_all,
+            api::search_stream,
             api::meta_details,
             api::livetv_channels,
             api::livetv_favorites,
             api::livetv_toggle_favorite,
             api::title_streams,
             api::livetv_resolve,
+            api::livetv_epg,
+            api::livetv_reload,
             api::settings_get,
             api::settings_set,
             api::library_favorite_keys,

@@ -66,6 +66,54 @@ pub async fn search(client: &AddonClient, manifests: &[AddonManifest], query: &s
     sections
 }
 
+/// One section of a streamed search (`search_stream`): sent as soon as its catalog answers.
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct SearchPart {
+    pub request_id: u64,
+    /// Position of the catalog in the full request list (sections are shown in this order).
+    pub order: usize,
+    pub section: SearchSection,
+}
+
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct SearchDone {
+    pub request_id: u64,
+    pub catalogs: usize,
+}
+
+/// Same requests as `search`, but every section is handed to `emit` as soon as it arrives, so the
+/// fastest addons show their results without waiting for the slowest one. `done` runs at the end.
+pub async fn search_streamed(
+    client: &AddonClient,
+    manifests: &[AddonManifest],
+    query: &str,
+    request_id: u64,
+    emit: impl Fn(SearchPart) + Send + Sync + Clone + 'static,
+) -> SearchDone {
+    let reqs = requests(manifests, query);
+    let catalogs = reqs.len();
+    let handles: Vec<_> = reqs
+        .into_iter()
+        .enumerate()
+        .map(|(order, r)| {
+            let (client, emit) = (client.clone(), emit.clone());
+            tauri::async_runtime::spawn(async move {
+                let Ok(payload) = client.get_text(&r.url, false).await else { return };
+                let Ok(page) = nuvio_core::catalog::parse_catalog_page(&payload, None, None) else { return };
+                if !page.items.is_empty() {
+                    emit(SearchPart { request_id, order, section: SearchSection { key: r.key, title: r.title, addon_name: r.addon_name, items: page.items } });
+                }
+            })
+        })
+        .collect();
+    for h in handles {
+        let _ = h.await;
+    }
+    SearchDone { request_id, catalogs }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

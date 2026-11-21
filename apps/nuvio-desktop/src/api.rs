@@ -72,6 +72,21 @@ pub async fn search_all(state: State<'_, AppState>, query: String) -> Result<Vec
     Ok(search::search(&state.addons.client, &loaded.manifests, &query).await)
 }
 
+/// Search with results as they arrive: `search-part` events (one per catalog with results), then
+/// `search-done`. The interface ignores the events of an older `request_id`.
+#[tauri::command]
+pub async fn search_stream(app: tauri::AppHandle, state: State<'_, AppState>, query: String, request_id: u64) -> Result<(), String> {
+    use tauri::Emitter;
+    let loaded = state.addons.loaded().await?;
+    let emitter = app.clone();
+    let done = search::search_streamed(&state.addons.client, &loaded.manifests, &query, request_id, move |part| {
+        let _ = emitter.emit("search-part", part);
+    })
+    .await;
+    let _ = app.emit("search-done", done);
+    Ok(())
+}
+
 #[tauri::command]
 pub async fn meta_details(state: State<'_, AppState>, content_type: String, id: String) -> Result<meta::Details, String> {
     let loaded = state.addons.loaded().await?;
@@ -80,6 +95,25 @@ pub async fn meta_details(state: State<'_, AppState>, content_type: String, id: 
 
 #[tauri::command]
 pub async fn livetv_channels(state: State<'_, AppState>) -> Result<livetv::ChannelList, String> {
+    let loaded = state.addons.loaded().await?;
+    Ok(livetv::load(&state.addons.client, &loaded.manifests).await)
+}
+
+/// "Recarregar": fetches again the manifests of the channel addons (all of them, or the ones named),
+/// then their channel catalogs. Other addons are not touched.
+#[tauri::command]
+pub async fn livetv_reload(state: State<'_, AppState>, addon_names: Option<Vec<String>>) -> Result<livetv::ChannelList, String> {
+    let loaded = state.addons.loaded().await?;
+    let mut urls: Vec<String> = livetv::listable_tv_catalogs(&loaded.manifests)
+        .into_iter()
+        .filter(|(m, _, _)| addon_names.as_ref().is_none_or(|names| names.contains(&m.name)))
+        .map(|(m, _, _)| m.transport_url.clone())
+        .collect();
+    urls.dedup();
+    for url in &urls {
+        // A failed refresh keeps the previous manifest; its channels are still listed.
+        let _ = state.addons.refresh_one(url).await;
+    }
     let loaded = state.addons.loaded().await?;
     Ok(livetv::load(&state.addons.client, &loaded.manifests).await)
 }
@@ -124,6 +158,29 @@ pub async fn livetv_resolve(state: State<'_, AppState>, key: String) -> Result<V
         return Err("the addon of this channel is not enabled".into());
     }
     Ok(streams::search_in(&state.addons.client, &state.streams, &owner, content_type, meta_id).await)
+}
+
+/// Program guide of one channel (see `services::epg`): asked only for the channel the user picked,
+/// only to the addon that listed it, reused until the current program ends.
+#[tauri::command]
+pub async fn livetv_epg(state: State<'_, AppState>, key: String, tz_offset_minutes: i64) -> Result<crate::services::epg::EpgView, String> {
+    use crate::services::epg;
+    let now = library::now_ms();
+    if let Some(view) = state.epg.cached(&key, now) {
+        return Ok(view);
+    }
+    let (instance, content_type, meta_id) = livetv::split_key(&key).ok_or("invalid channel key")?;
+    let loaded = state.addons.loaded().await?;
+    let Some(owner) = loaded.manifests.iter().find(|m| addons::addon_instance_id(m) == instance) else {
+        return Ok(state.epg.update(&key, Vec::new(), now));
+    };
+    if !owner.supports_resource("meta", content_type, meta_id) {
+        return Ok(state.epg.update(&key, Vec::new(), now));
+    }
+    let url = nuvio_core::url::build_resource_url(&owner.transport_url, "meta", content_type, meta_id, None);
+    let text = state.addons.client.get_text(&url, true).await.map_err(|e| e.to_string())?;
+    let description = nuvio_core::meta::parse_meta(&text).ok().and_then(|m| m.description).unwrap_or_default();
+    Ok(state.epg.update(&key, epg::parse_schedule(&description, now, tz_offset_minutes.clamp(-14 * 60, 14 * 60)), now))
 }
 
 #[derive(Serialize)]
@@ -372,6 +429,7 @@ mod tests {
             p2p_session: Default::default(),
             youtube: nuvio_core::youtube::Extractor::new().unwrap(),
             updates: Default::default(),
+            epg: Default::default(),
         };
         let app = mock_builder()
             .manage(state)

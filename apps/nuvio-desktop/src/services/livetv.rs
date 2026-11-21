@@ -33,7 +33,7 @@ pub struct ChannelList {
     pub failed_catalogs: usize,
 }
 
-fn listable_tv_catalogs(manifests: &[AddonManifest]) -> Vec<(&AddonManifest, String, bool)> {
+pub fn listable_tv_catalogs(manifests: &[AddonManifest]) -> Vec<(&AddonManifest, String, bool)> {
     manifests
         .iter()
         .flat_map(|m| {

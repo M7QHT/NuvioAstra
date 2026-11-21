@@ -1313,7 +1313,7 @@ export async function runUiTest() {
     check("navigation: Home", !!(await waitFor(() => $$(".row-section").find(visible), 10000)), "rows visible");
     click($('[data-tab="tv"]')!);
     const tv = await waitFor(() => $(".channel") ?? $$(".livetv .screen-message").find((m) => !/Carregando/.test(m.textContent ?? "")), 60000);
-    check("navigation: TV", !!tv, tv ? `${$$(".channel").length} canais, ${$$(".livetv .drag-scroll .chip").length} filtros` : "timeout");
+    check("navigation: TV", !!tv, tv ? `${$$(".channel").length} canais, ${$$(".livetv .livetv-categories .cat-item").length} filtros` : "timeout");
 
     // 5. Settings: every category opens with its controls (read only in this phase).
     await settingsTour();
