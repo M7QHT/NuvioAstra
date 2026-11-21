@@ -237,6 +237,20 @@ fn stream_play(
     Ok(info)
 }
 
+/// Shows the main window maximized the first time (called by the interface after its first paint).
+fn show_main_window(window: &tauri::WebviewWindow) {
+    if !window.is_visible().unwrap_or(true) {
+        let _ = window.maximize();
+        let _ = window.show();
+        let _ = window.set_focus();
+    }
+}
+
+#[tauri::command]
+fn window_ready(window: tauri::WebviewWindow) {
+    show_main_window(&window);
+}
+
 /// `"selftest"` when the window is driven by the automated player tests (the UI then shows only
 /// the video overlay and loads no catalogs), `"uitest"` for the automated UI test (the normal UI
 /// plus its driver), `"app"` otherwise.
@@ -476,6 +490,7 @@ fn main() {
             p2p::p2p_clear_cache,
             p2p::p2p_cache_size,
             app_mode,
+            window_ready,
             uitest::uitest_capture,
             uitest::uitest_report,
             uitest::uitest_phase,
@@ -489,7 +504,24 @@ fn main() {
                 .title("Nuvio Astra")
                 .inner_size(1280.0, 760.0)
                 .min_inner_size(800.0, 480.0)
+                // Normal use: created hidden and shown maximized by `window_ready` once the interface
+                // has painted (no white/black frame while the webview starts). The automated tests
+                // keep the visible fixed-size window they measure.
+                .visible(selftest.is_some() || uitest::requested().is_some())
                 .build()?;
+            if selftest.is_none() && uitest::requested().is_none() {
+                // Safety net: show the window even if the interface never reports.
+                let handle = app.handle().clone();
+                std::thread::spawn(move || {
+                    std::thread::sleep(std::time::Duration::from_secs(5));
+                    let h = handle.clone();
+                    let _ = handle.run_on_main_thread(move || {
+                        if let Some(w) = h.get_webview_window("main") {
+                            show_main_window(&w);
+                        }
+                    });
+                });
+            }
             make_webview_transparent(&window)?;
             let handle = app.handle().clone();
             let wake = app.state::<AppState>().sync_wake.clone();

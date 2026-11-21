@@ -45,6 +45,34 @@ function DragScroll({ children }: { children: ReactNode }) {
     drag.current = null;
     ref.current?.releasePointerCapture?.(e.pointerId);
   };
+  const [edges, setEdges] = useState({ left: false, right: false });
+  const update = () => {
+    const el = ref.current;
+    if (!el) return;
+    const left = el.scrollLeft > 4;
+    const right = el.scrollLeft + el.clientWidth < el.scrollWidth - 4;
+    setEdges((prev) => (prev.left === left && prev.right === right ? prev : { left, right }));
+  };
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    update();
+    // Width of the strip or of its content changes (window resize, categories loaded).
+    const ro = new ResizeObserver(update);
+    ro.observe(el);
+    const mo = new MutationObserver(() => {
+      Array.from(el.children).forEach((c) => ro.observe(c));
+      update();
+    });
+    mo.observe(el, { childList: true });
+    Array.from(el.children).forEach((c) => ro.observe(c));
+    return () => {
+      ro.disconnect();
+      mo.disconnect();
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+  const step = (dir: number) => ref.current?.scrollBy({ left: dir * ref.current.clientWidth * 0.7, behavior: "smooth" });
   useEffect(() => {
     const el = ref.current;
     if (!el) return;
@@ -58,8 +86,14 @@ function DragScroll({ children }: { children: ReactNode }) {
     return () => el.removeEventListener("wheel", onWheel);
   }, []);
   return (
-    <div className="drag-scroll" ref={ref} onPointerDown={onDown} onPointerMove={onMove} onPointerUp={onUp} onPointerCancel={onUp}>
-      {children}
+    <div className="chip-strip">
+      <button className="strip-arrow" aria-label="Categorias anteriores" onClick={() => step(-1)} disabled={!edges.left} tabIndex={edges.left ? 0 : -1}>‹</button>
+      <div className={`chip-viewport ${edges.left ? "more-left" : ""} ${edges.right ? "more-right" : ""}`}>
+        <div className="drag-scroll" ref={ref} onScroll={update} onPointerDown={onDown} onPointerMove={onMove} onPointerUp={onUp} onPointerCancel={onUp}>
+          {children}
+        </div>
+      </div>
+      <button className="strip-arrow" aria-label="Mais categorias" onClick={() => step(1)} disabled={!edges.right} tabIndex={edges.right ? 0 : -1}>›</button>
     </div>
   );
 }
@@ -226,14 +260,10 @@ export function LiveTv() {
                   <div className="muted small">Origem: {current.addonName}</div>
                 </div>
               </div>
-              {current.genres.length > 0 && <div className="chips">{current.genres.map((g) => <span key={g} className="chip">{g}</span>)}</div>}
               {resolving && <div className="muted">Resolvendo o stream deste canal…</div>}
               {(channelError || player.error) && <div className="row-error">{channelError ?? `Falha ao reproduzir: ${player.error}`}</div>}
-              <div className="preview-actions">
-                <button onClick={() => void toggleFavorite(current.key)}>{favoriteSet.has(current.key) ? "★ Favorito" : "☆ Favoritar"}</button>
-                {embedded && <button onClick={() => void goFullscreen()}>⛶ Tela cheia</button>}
-                {embedded && <button onClick={() => void player.close()}>■ Parar</button>}
-              </div>
+              {/* Reserved for the program guide (EPG). */}
+              <div className="preview-epg" data-testid="preview-epg" />
             </>
           ) : (
             <div className="muted">Os streams são resolvidos somente ao escolher um canal.</div>

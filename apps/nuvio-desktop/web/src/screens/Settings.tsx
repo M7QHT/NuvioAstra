@@ -3,6 +3,7 @@
 // The original's other settings pages are listed under "Ainda não disponível" (no controls).
 
 import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
+import { AccountIcon, AddonsIcon, AudioIcon, HomeIcon, P2pIcon, PendingIcon, PlaybackIcon, ProfileDataIcon, SubtitlesIcon, UpdatesIcon } from "../components/NavIcons";
 import { api, errorText } from "../api";
 import { AccountPanel } from "../components/AccountPanel";
 import { AddonsManager } from "../components/AddonsManager";
@@ -14,17 +15,17 @@ import type { CatalogChoice, P2pCacheName, P2pProfileName, P2pSettings, PlayerSe
 
 type Section = "account" | "home" | "addons" | "playback" | "p2p" | "audio" | "subtitles" | "data" | "updates" | "pending";
 
-const SECTIONS: { id: Section; label: string; icon: string }[] = [
-  { id: "account", label: "Conta", icon: "☁" },
-  { id: "home", label: "Início", icon: "⌂" },
-  { id: "addons", label: "Addons", icon: "🧩" },
-  { id: "playback", label: "Reprodução", icon: "▶" },
-  { id: "p2p", label: "Torrent / P2P", icon: "⇅" },
-  { id: "audio", label: "Áudio", icon: "🔊" },
-  { id: "subtitles", label: "Legendas", icon: "💬" },
-  { id: "data", label: "Perfil e dados", icon: "🗂" },
-  { id: "updates", label: "Atualizações", icon: "⟳" },
-  { id: "pending", label: "Ainda não disponível", icon: "…" },
+const SECTIONS: { id: Section; label: string; icon: ReactNode }[] = [
+  { id: "account", label: "Conta", icon: <AccountIcon /> },
+  { id: "home", label: "Início", icon: <HomeIcon /> },
+  { id: "addons", label: "Addons", icon: <AddonsIcon /> },
+  { id: "playback", label: "Reprodução", icon: <PlaybackIcon /> },
+  { id: "p2p", label: "Torrent / P2P", icon: <P2pIcon /> },
+  { id: "audio", label: "Áudio", icon: <AudioIcon /> },
+  { id: "subtitles", label: "Legendas", icon: <SubtitlesIcon /> },
+  { id: "data", label: "Perfil e dados", icon: <ProfileDataIcon /> },
+  { id: "updates", label: "Atualizações", icon: <UpdatesIcon /> },
+  { id: "pending", label: "Ainda não disponível", icon: <PendingIcon /> },
 ];
 
 type Status = { kind: "idle" } | { kind: "saving" } | { kind: "saved"; note?: string } | { kind: "error"; message: string };

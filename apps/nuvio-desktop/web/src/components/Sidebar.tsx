@@ -1,16 +1,19 @@
 // Side navigation: Início, TV, Buscar, Biblioteca; Configurações at the bottom above the profile.
+// Icons in the app icon's blue/cyan palette (`NavIcons.tsx`); the logo at the top is the app's own,
+// centered on the same axis as the icons. The sync state is shown in Settings → Conta only.
 
+import type { ReactNode } from "react";
 import type { ProfileInfo } from "../types";
 import { Avatar } from "./ProfileMenu";
-import { syncLabel, useAccount } from "../account";
+import { HomeIcon, LibraryIcon, SearchIcon, SettingsIcon, TvIcon } from "./NavIcons";
 
 export type Tab = "home" | "tv" | "search" | "library" | "settings";
 
-const ITEMS: { tab: Tab; label: string; icon: string }[] = [
-  { tab: "home", label: "Início", icon: "⌂" },
-  { tab: "tv", label: "TV", icon: "📺" },
-  { tab: "search", label: "Buscar", icon: "⌕" },
-  { tab: "library", label: "Biblioteca", icon: "📚" },
+const ITEMS: { tab: Tab; label: string; icon: ReactNode }[] = [
+  { tab: "home", label: "Início", icon: <HomeIcon /> },
+  { tab: "tv", label: "TV", icon: <TvIcon /> },
+  { tab: "search", label: "Buscar", icon: <SearchIcon /> },
+  { tab: "library", label: "Biblioteca", icon: <LibraryIcon /> },
 ];
 
 interface Props {
@@ -22,7 +25,6 @@ interface Props {
 }
 
 export function Sidebar({ current, onSelect, profile, onProfile }: Props) {
-  const account = useAccount();
   return (
     <nav className="sidebar" aria-label="Navegação principal">
       <div className="brand" title="Nuvio Astra">
@@ -37,6 +39,7 @@ export function Sidebar({ current, onSelect, profile, onProfile }: Props) {
               aria-current={current === item.tab ? "page" : undefined}
               onClick={() => onSelect(item.tab)}
               data-tab={item.tab}
+              title={item.label}
             >
               <span className="nav-icon" aria-hidden>{item.icon}</span>
               <span className="nav-label">{item.label}</span>
@@ -45,22 +48,22 @@ export function Sidebar({ current, onSelect, profile, onProfile }: Props) {
         ))}
       </ul>
       <span className="spacer" />
+      <div className="sidebar-divider" aria-hidden />
       <button
         className={`nav-item ${current === "settings" ? "active" : ""}`}
         aria-current={current === "settings" ? "page" : undefined}
         onClick={() => onSelect("settings")}
         data-tab="settings"
+        title="Configurações"
       >
         <span className="nav-icon" aria-hidden>
-          ⚙
-          {account?.signedIn && <span className={`nav-sync ${syncLabel(account).tone}`} data-testid="nav-sync" data-state={account.state} />}
+          <SettingsIcon />
         </span>
         <span className="nav-label">Configurações</span>
-        {account?.signedIn && <span className="sr-only">{syncLabel(account).text}</span>}
       </button>
       {profile && (
         <button className="profile-chip" title={`${profile.name} · trocar de perfil`} onClick={onProfile} data-testid="profile-chip" aria-haspopup="menu">
-          <Avatar profile={profile} />
+          <span className="profile-ring"><Avatar profile={profile} /></span>
           <span className="nav-label">{profile.name}</span>
         </button>
       )}

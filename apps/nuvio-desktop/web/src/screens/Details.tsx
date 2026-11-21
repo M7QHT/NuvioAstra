@@ -71,7 +71,8 @@ export function Details({ item, onBack }: Props) {
   }, [contentType, id]);
 
   useEffect(() => {
-    if (selected) sources.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+    // The panel is sticky on the right: keep it in view (series: chosen far down the episode list).
+    if (selected) sources.current?.scrollIntoView({ behavior: "smooth", block: "nearest" });
   }, [selected]);
 
   const episodes = useMemo(
@@ -137,6 +138,8 @@ export function Details({ item, onBack }: Props) {
       <div className="details-backdrop" style={m.background ? { backgroundImage: `url("${m.background}")` } : undefined} />
       <div className="details-body">
         <button className="back" onClick={onBack} aria-label="Voltar">←</button>
+        <div className={`details-layout ${selected ? "with-sources" : ""}`}>
+        <div className="details-main">
         <div className="details-head">
           {m.poster && <img className="details-poster" src={m.poster} alt="" />}
           <div className="details-info">
@@ -196,16 +199,6 @@ export function Details({ item, onBack }: Props) {
 
         {player.error && <div className="row-error">Falha ao reproduzir: {player.error}</div>}
 
-        {selected && (
-          <section className="details-section" ref={sources}>
-            <h2>
-              Fontes {selected !== "movie" && `· ${episodeLabel(selected)}`}
-              {resumeAt !== null && <span className="muted small" data-testid="resume-note"> · continua de {clock(resumeAt)}</span>}
-            </h2>
-            <StreamList contentType={m.contentType} id={selected === "movie" ? m.id : selected.id} onPlay={play} />
-          </section>
-        )}
-
         {isSeries && (
           <section className="details-section">
             <div className="season-tabs" role="tablist">
@@ -255,6 +248,26 @@ export function Details({ item, onBack }: Props) {
             </div>
           </section>
         )}
+        </div>
+
+        {selected && (
+          <aside className="sources-panel" ref={sources} aria-label="Fontes" data-testid="sources-panel">
+            <header className="sources-header">
+              <div>
+                <h2>Fontes</h2>
+                <div className="muted small">
+                  {selected === "movie" ? m.name : `${episodeLabel(selected)} · ${selected.title}`}
+                  {resumeAt !== null && <span data-testid="resume-note"> · continua de {clock(resumeAt)}</span>}
+                </div>
+              </div>
+              <button className="icon-btn" aria-label="Fechar fontes" onClick={() => setSelected(null)}>✕</button>
+            </header>
+            <div className="sources-body">
+              <StreamList contentType={m.contentType} id={selected === "movie" ? m.id : selected.id} onPlay={play} />
+            </div>
+          </aside>
+        )}
+        </div>
       </div>
       {torrent && (
         <TorrentStart

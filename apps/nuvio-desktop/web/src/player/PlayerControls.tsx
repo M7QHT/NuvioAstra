@@ -76,6 +76,24 @@ export function PlayerControls({ snapshot: s, live, fullscreen, onToggleFullscre
 
   const pct = (v: number) => `${(v * 100).toFixed(3)}%`;
 
+  const volumeControl = (
+    <label className="volume">
+      <button className="pc-icon" aria-label={s?.mute ? "Ativar som" : "Silenciar"} onClick={() => void api.playerCommand({ type: "setMute", mute: !s?.mute })}>
+        {s?.mute ? Icons.muted : Icons.volume}
+      </button>
+      <input
+        className="pc-volume"
+        type="range"
+        min={0}
+        max={200}
+        value={volume}
+        aria-label="Volume"
+        style={{ ["--fill" as string]: `${(volume / 200) * 100}%` }}
+        onChange={(e) => void api.playerCommand({ type: "setVolume", volume: Number(e.target.value) })}
+      />
+    </label>
+  );
+
   return (
     <div className="controls" onDoubleClick={onToggleFullscreen}>
       {status && <div className="player-status">{status}</div>}
@@ -121,24 +139,12 @@ export function PlayerControls({ snapshot: s, live, fullscreen, onToggleFullscre
             </span>
           </>
         )}
+        {/* Live: play/pause, volume, then the AO VIVO mark. */}
+        {live && <span className="pc-live-volume">{volumeControl}</span>}
         {live && <span className="live-dot">AO VIVO</span>}
         <span className="spacer" />
         <div className="pc-panel">
-          <label className="volume">
-            <button className="pc-icon" aria-label={s?.mute ? "Ativar som" : "Silenciar"} onClick={() => void api.playerCommand({ type: "setMute", mute: !s?.mute })}>
-              {s?.mute ? Icons.muted : Icons.volume}
-            </button>
-            <input
-              className="pc-volume"
-              type="range"
-              min={0}
-              max={200}
-              value={volume}
-              aria-label="Volume"
-              style={{ ["--fill" as string]: `${(volume / 200) * 100}%` }}
-              onChange={(e) => void api.playerCommand({ type: "setVolume", volume: Number(e.target.value) })}
-            />
-          </label>
+          {!live && volumeControl}
           {audio.length > 1 && (
             <select className="pc-select" aria-label="Faixa de áudio" value={s?.aid ?? "no"} onChange={(e) => void api.playerCommand({ type: "setAudioTrack", id: e.target.value })}>
               {audio.map((t) => <option key={t.id} value={String(t.id)}>{trackLabel(t)}</option>)}
@@ -155,16 +161,18 @@ export function PlayerControls({ snapshot: s, live, fullscreen, onToggleFullscre
               {[0.5, 0.75, 1, 1.25, 1.5, 2].map((v) => <option key={v} value={String(v)}>{v}x</option>)}
             </select>
           )}
-          <select className="pc-select pc-pill" aria-label="Modo de imagem" value={mode} onChange={(e) => {
-            const next = e.target.value as ResizeMode;
-            setMode(next);
-            void api.playerCommand({ type: "setResizeMode", mode: next });
-          }}>
-            <option value="fit">Ajustar</option>
-            <option value="fill">Preencher</option>
-            <option value="zoom">Zoom</option>
-            <option value="stretch">Esticar</option>
-          </select>
+          {!live && (
+            <select className="pc-select pc-pill" aria-label="Modo de imagem" value={mode} onChange={(e) => {
+              const next = e.target.value as ResizeMode;
+              setMode(next);
+              void api.playerCommand({ type: "setResizeMode", mode: next });
+            }}>
+              <option value="fit">Ajustar</option>
+              <option value="fill">Preencher</option>
+              <option value="zoom">Zoom</option>
+              <option value="stretch">Esticar</option>
+            </select>
+          )}
           {onPictureInPicture && <button className="pc-icon" aria-label="Picture-in-picture" onClick={onPictureInPicture}>{Icons.pip}</button>}
           {onClose && <button className="pc-icon" aria-label="Fechar" onClick={onClose}>{Icons.close}</button>}
           <button className="pc-icon" aria-label={fullscreen ? "Sair da tela cheia" : "Tela cheia"} onClick={onToggleFullscreen}>

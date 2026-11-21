@@ -71,7 +71,7 @@ async function playFirstSource(label: string, whilePlaying?: () => Promise<void>
   const list = await waitFor(() => {
     const s = $(".details .streams");
     if (s) return s;
-    const msg = $$(".details .details-section .muted, .details .row-error").find((el) => /Nenhum addon|Falha/.test(el.textContent ?? ""));
+    const msg = $$(".details .sources-panel .muted, .details .details-section .muted, .details .row-error").find((el) => /Nenhum addon|Falha/.test(el.textContent ?? ""));
     return msg ?? null;
   }, 45000);
   if (!list || !list.classList.contains("streams")) {

@@ -1,9 +1,10 @@
-// Search: one round of requests to the addons' search catalogs per query (typing is debounced
+// Search: results shown as Home-style horizontal rows, one per catalog (as the original).
+// One round of requests to the addons' search catalogs per query (typing is debounced
 // 450 ms; an outdated answer never replaces a newer one).
 
 import { useEffect, useRef, useState } from "react";
 import { api, dataEpoch, errorText, onDataEpoch } from "../api";
-import { PosterCard } from "../components/PosterCard";
+import { ResultRow } from "../components/ResultRow";
 import type { MetaPreview, SearchSection } from "../types";
 
 interface Props {
@@ -76,15 +77,7 @@ export function Search({ onOpen }: Props) {
       {sections && !sections.length && !busy && <div className="screen-message">Nada encontrado para “{query.trim()}”.</div>}
       {!sections && !busy && <div className="screen-message muted">Digite ao menos 2 letras.</div>}
       {sections?.map((section) => (
-        <section key={section.key} className="row-section">
-          <header className="row-header">
-            <h2>{section.title}</h2>
-            <span className="muted small">{section.addonName}</span>
-          </header>
-          <div className="grid">
-            {section.items.map((item) => <PosterCard key={`${item.contentType}/${item.id}`} item={item} onOpen={onOpen} />)}
-          </div>
-        </section>
+        <ResultRow key={section.key} title={section.title} addonName={section.addonName} items={section.items} onOpen={onOpen} />
       ))}
     </div>
   );
