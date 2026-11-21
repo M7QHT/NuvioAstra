@@ -1164,6 +1164,70 @@ async function installCheck(): Promise<Record<string, unknown>> {
   return { native: n };
 }
 
+// ---------------- README screenshots (phase `readme-shots`) ----------------
+// Captures of the main screens for the public README. Before each capture, everything that names
+// an addon or shows the user's own data is hidden: addon names (rows, details, channels),
+// Continue watching, favorite marks, progress notes and the profile name. Nothing is played and the
+// search used for the picture is not added to the search history.
+
+async function readmeShots(): Promise<Record<string, unknown>> {
+  const style = document.createElement("style");
+  style.textContent = `
+    .row-header .muted.small, .details-info > .muted.small, .details-info [data-testid="movie-progress"],
+    .channel-text .muted, .preview-title .muted, .profile-chip .nav-label { visibility: hidden !important; }
+    [data-testid="home-continue"], .fav-btn.on, .settings-profile, .update-banner { display: none !important; }
+  `;
+  document.head.appendChild(style);
+  const setItem = Storage.prototype.setItem;
+  Storage.prototype.setItem = function (key: string, value: string) {
+    if (key === "nuvio.search.history") return;
+    return setItem.call(this, key, value);
+  };
+  const shots: Record<string, unknown> = {};
+  const shot = async (name: string) => {
+    await sleep(1800); // images settle
+    const s = await capture(`readme-${name}`);
+    shots[name] = !!s;
+    check(`readme: ${name}`, !!s, s ? "captured" : "capture failed");
+  };
+  try {
+    // Home
+    await goTab("home");
+    await waitFor(() => $$(".home .row-section .card[data-id]").length > 8, 40000);
+    window.scrollTo(0, 0);
+    await shot("home");
+    // Details (no sources opened)
+    const cards = await homeCards("movie");
+    if (cards[0]) {
+      click(cards[0]);
+      await expectDetails("readme details", cards[0].dataset.id ?? null, "movie");
+      await shot("details");
+      await back();
+    }
+    // Search
+    await goTab("search");
+    const input = await waitFor(() => $<HTMLInputElement>('[data-testid="search-input"]'), 5000);
+    if (input) {
+      typeInto(input, "batman");
+      await waitFor(() => $$(".search .row-section").length >= 2, 40000);
+      await shot("search");
+    }
+    // Live TV (list and guide area; nothing tuned)
+    await goTab("tv");
+    await waitFor(() => $$(".livetv .channel").length > 5, 40000);
+    const cat = $$<HTMLButtonElement>(".livetv-categories .cat-item")[3];
+    if (cat) click(cat);
+    await shot("livetv");
+    // Settings → Reprodução
+    await openSettings("playback");
+    await shot("settings");
+  } finally {
+    Storage.prototype.setItem = setItem;
+    style.remove();
+  }
+  return { shots };
+}
+
 // ---------------- Trailers (phase `trailer`) ----------------
 // A movie and a series from Home whose details have a YouTube trailer: nothing is requested before
 // the click, the trailer plays (picture + audio track) in the app's player, closing returns to the
@@ -1229,6 +1293,7 @@ export async function runUiTest() {
       else if (phase === "p2p") extra = await p2pPhase();
       else if (phase === "trailer") extra = await trailerPhase();
       else if (phase === "install-check") extra = await installCheck();
+      else if (phase === "readme-shots") extra = await readmeShots();
       else if (phase.startsWith("account-verify:")) await accountVerify(JSON.parse(decodeURIComponent(phase.slice("account-verify:".length))));
       else if (phase.startsWith("manage-verify:")) await manageVerify(JSON.parse(decodeURIComponent(phase.slice("manage-verify:".length))));
       else if (phase.startsWith("library-verify:")) await libraryVerify(JSON.parse(decodeURIComponent(phase.slice("library-verify:".length))));
