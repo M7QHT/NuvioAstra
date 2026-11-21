@@ -168,7 +168,7 @@ Daí em diante, todas as versões chegam pelo próprio aplicativo.
 
 ## 9. Como as pessoas recebem as atualizações
 
-- O aplicativo procura uma versão nova 20 segundos depois de abrir e a cada 6 horas
+- O aplicativo procura uma versão nova logo ao abrir (menos de 1 segundo) e a cada 6 horas
   (`https://github.com/<seu-usuario>/<repo>/releases/latest/download/latest.json`).
 - Se houver, aparece um aviso discreto no topo: versão, **Novidades**, **Atualizar agora** e
   **Depois**. Também dá para verificar em **Configurações → Atualizações**.
@@ -183,9 +183,21 @@ Daí em diante, todas as versões chegam pelo próprio aplicativo.
 ## 10. Publicar atualizações futuras
 
 1. Faça as alterações no código (nesta pasta, que agora é o seu repositório).
-2. Commit com uma mensagem clara — ela vira a nota da versão. Ex.: `Corrige legenda que sumia ao pausar`.
-3. **Push** para `main`.
-4. O workflow publica `0.1.<próximo número>` e os aplicativos instalados são avisados.
+2. Envie **tudo num único commit** (pelo site: **Add file → Upload files** e arraste as pastas
+   alteradas juntas). Cada commit na `main` dispara uma compilação; vários commits seguidos fazem
+   o GitHub cancelar as compilações da fila e publicar só a última.
+3. Escreva as novidades no campo **descrição** do commit (*Extended description*), uma por linha:
+   ```
+   Ícones novos na barra lateral
+   Painel de fontes à direita
+   Pesquisa em fileiras
+   ```
+   O título do commit pode ser curto (ex.: `Nova versão`): quando há descrição, só ela entra nas
+   notas. Sem descrição, entra o título. Títulos automáticos do GitHub ("Add files via upload",
+   "Update …", "Create …", "Delete …") nunca entram.
+4. O workflow publica a versão seguinte à última publicada (`0.1.6` → `0.1.7`, sem pular números,
+   mesmo que alguma compilação falhe ou seja cancelada), e as notas aparecem no Release e no aviso
+   de atualização do aplicativo.
 
 Dicas:
 - Para mudar o número "maior" (ex.: 0.2.x), altere `"version"` em
