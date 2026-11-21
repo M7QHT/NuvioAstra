@@ -1,86 +1,80 @@
-# Nuvio Astra
+<p align="center">
+  <img src="packaging/branding/nuvio-astra.png" width="120" alt="Nuvio Astra" />
+</p>
 
-<img src="packaging/branding/nuvio-astra.png" width="96" alt="Nuvio Astra" />
+<h1 align="center">Nuvio Astra</h1>
 
-**Nuvio Astra** is a Windows x64 desktop app for the Stremio addon ecosystem: Home catalogs, search,
-details with YouTube trailers, live TV, library (favorites, history, Continue watching), addon and profile
-management, Nuvio account sync, torrent (P2P) sources and an embedded libmpv player. Built with Rust + Tauri 2 + React + TypeScript.
+<p align="center">
+  Fork não oficial do <a href="https://github.com/NuvioMedia/NuvioDesktop">Nuvio Desktop</a> para Windows, reescrito em <b>Rust + Tauri</b> para ser leve e rápido.<br/>
+  Usa os mesmos addons do ecossistema Stremio e a mesma conta Nuvio.
+</p>
 
-It is a fork of **Nuvio Desktop** (the Kotlin app in the repository root, untouched, kept as the
-reference implementation): it reads the original's data once (migration with verified backups) and
-works with the same addons. The development folder keeps its technical name, `nextgen/`.
+<p align="center">
+  <a href="../../releases/latest"><b>⬇️ Baixar a versão mais recente</b></a>
+</p>
 
-- Architecture decision: [`ARCHITECTURE_DECISION.md`](ARCHITECTURE_DECISION.md)
-- Identity and technical names: [`docs/BRANDING.md`](docs/BRANDING.md)
-- Feature parity with Nuvio Desktop: [`docs/FEATURE_PARITY.md`](docs/FEATURE_PARITY.md)
-- Changes: [`docs/CHANGELOG.md`](docs/CHANGELOG.md) · Publishing and updates: [`GITHUB_PUBLISH.md`](GITHUB_PUBLISH.md) · Testing policy: [`docs/TESTING_POLICY.md`](docs/TESTING_POLICY.md)
-- Audit and baseline: [`docs/AUDIT.md`](docs/AUDIT.md) · Comparison: [`docs/COMPARISON.md`](docs/COMPARISON.md)
-- Player: [`docs/PLAYER_SPIKE.md`](docs/PLAYER_SPIKE.md), [`docs/PLAYER_PORT.md`](docs/PLAYER_PORT.md), [`docs/RENDER_FIX.md`](docs/RENDER_FIX.md)
+---
 
-## Download
+## Capturas de tela
 
-Get **`Nuvio-Astra-<version>-x64-setup.exe`** from the [latest release](../../releases/latest)
-(Windows 10/11 x64). After that, new versions arrive inside the app: a notice at the top shows the
-version and what changed, with **Atualizar agora** / **Depois** (also *Configurações → Atualizações*).
-Every update is verified by its signature before it is installed; profiles, addons, settings,
-library and the account session are kept. Checksums: `SHA256SUMS.txt` in each release.
-
-The installer and the executable are not code-signed yet, so Windows SmartScreen may ask for
-confirmation on the first run (*Mais informações → Executar assim mesmo*).
-
-Maintainers: how releases are built and published — [`GITHUB_PUBLISH.md`](GITHUB_PUBLISH.md).
-
-## Install (Windows x64)
-
-Run `Nuvio-Astra-<version>-x64-setup.exe`. It installs for the current user (no administrator rights)
-into `%LOCALAPPDATA%\Programs\Nuvio Astra`, adds **Nuvio Astra** to the Start menu and the desktop, and
-registers an uninstaller in *Apps & features*. A portable copy is also produced
-(`dist\Nuvio Astra\Nuvio Astra.exe`, next to `libmpv-2.dll` and `nuvio_engine.dll`).
-
-Files installed: `Nuvio Astra.exe`, `libmpv-2.dll` (player), `nuvio_engine.dll` (P2P engine of the
-original app, libtorrent; it needs only Windows system DLLs and the Universal CRT of Windows 10/11),
-the icon and the uninstaller. The app looks for both DLLs next to its executable.
-
-User data lives in `%APPDATA%\NuvioNextGen` (profiles, addons, settings, library, progress, migration
-records, backups, the encrypted account session). The folder keeps its technical name so existing data
-is used as is; installing, updating or uninstalling never touches it. The torrent piece cache lives in
-`%LOCALAPPDATA%\NuvioNextGen\p2p-cache` (size and "Limpar cache" in Settings → Torrent / P2P).
-
-## Layout
-
-| Path | Purpose |
+| Início | Detalhes |
 |---|---|
-| `crates/nuvio-core` | Stremio addon protocol (URLs, manifests, catalogs, streams) and HTTP client — UI-free |
-| `crates/nuvio-store` | App data (profiles, addons, settings, library) and the migration from Nuvio Desktop |
-| `crates/nuvio-player` | Embedded libmpv player (Windows), runtime-loaded `libmpv-2.dll` |
-| `crates/nuvio-p2p` | Torrent streaming with the original's `nuvio_engine.dll` (runtime-loaded C ABI) |
-| `crates/nuvio-sync` | Nuvio account (auth, DPAPI session) and cloud sync |
-| `apps/nuvio-desktop` | The Nuvio Astra app: Tauri 2 shell (Rust) + React UI (`web/`) |
-| `apps/nuvio-probe` | CLI validating the core against the real install (read-only) |
-| `packaging/` | Official artwork, icon generation, Windows installer |
-| `tools/migration-audit` | Read-only audit / simulation of the real data folder |
-| `bench/` | Reproducible measurements |
+| ![Tela inicial](docs/screenshots/home.jpg) | ![Detalhes de um título](docs/screenshots/details.jpg) |
+| **Pesquisa** | **TV ao vivo** |
+| ![Pesquisa](docs/screenshots/search.jpg) | ![TV ao vivo com guia de programação](docs/screenshots/abacanais.png) |
 
-## Build
+<sub>Os catálogos, capas e informações exibidos vêm dos addons instalados pelo usuário. Nenhum conteúdo acompanha o aplicativo.</sub>
+
+## Recursos
+
+- **Início, pesquisa e detalhes:** catálogos dos seus addons em fileiras, pesquisa com resultados enquanto você digita e histórico, temporadas, episódios e elenco.
+- **Player embutido** (libmpv): aceleração por hardware, faixas de áudio e legendas, estilos de legenda, PiP.
+- **Torrent / P2P** no próprio player, com reprodução antes do download terminar.
+- **Trailers do YouTube** na tela de detalhes.
+- **TV ao vivo** com categorias, filtro por addon e guia de programação (quando o addon informa).
+- **Biblioteca:** favoritos, histórico e "Continuar assistindo".
+- **Perfis** com PIN e avatares, e **sincronização com a conta Nuvio**.
+- **Atualizações automáticas** pelo próprio app, com verificação de assinatura.
+
+## Instalação
+
+1. Baixe `Nuvio-Astra-<versão>-x64-setup.exe` na página de [Releases](../../releases/latest).
+2. Execute o instalador. Não é preciso ser administrador.
+3. Novas versões chegam pelo próprio aplicativo: um aviso no topo mostra a versão e as novidades.
+
+**Requisitos:** Windows 10 ou 11 (64 bits) com o Microsoft Edge WebView2 (já incluído no Windows 11).
+
+O instalador ainda não tem assinatura digital, então o Windows SmartScreen pode pedir confirmação na primeira vez: **Mais informações → Executar assim mesmo**. Os arquivos de cada versão têm checksums em `SHA256SUMS.txt`.
+
+Quem já usa o Nuvio Desktop pode ter perfis, addons e biblioteca importados automaticamente na primeira abertura. Os arquivos originais não são alterados. Os dados do Nuvio Astra ficam em `%APPDATA%\NuvioNextGen` e são mantidos em atualizações e desinstalações.
+
+## Compilar a partir do código
 
 ```powershell
 cargo test --workspace
-# Release: frontend + Rust build, portable folder and installer in dist\ (libmpv-2.dll from -LibMpv,
-# NUVIO_LIBMPV or the release folder; nuvio_engine.dll from -Engine, NUVIO_ENGINE_DLL, the release
-# folder or the original app's copy in composeApp\src\desktopMain\native\windows\engine, checked for
-# x64, the C API and system-only dependencies; makensis from NSIS_HOME or the NSIS kept by the Tauri
-# bundler). In Windows PowerShell 5.1, build with cargo first and pass -SkipBuild (cargo's progress on
-# stderr stops the script there).
-powershell -NoProfile -ExecutionPolicy Bypass -File packaging\windows\build-release.ps1 -LibMpv C:\path\to\libmpv-2.dll
-# Icons (only when the artwork changes): regenerates icons\*.ico/*.png and the web icons.
-python packaging\branding\make_icons.py .
+cd apps\nuvio-desktop\web; npm ci; npm run build; cd ..\..\..
+cargo build --release -p nuvio-desktop
+powershell -NoProfile -ExecutionPolicy Bypass -File packaging\windows\build-release.ps1 -SkipBuild -LibMpv <caminho\libmpv-2.dll>
 ```
 
-The Cargo binary is `nuvio-desktop.exe` (internal name); the packaging step names the distributed
-executable `Nuvio Astra.exe`. Developer tools: `nuvio-desktop.exe --selftest <report.json>` (player
-self-test), `--uitest <report.json> [phase]` (automated UI test on a copy of the data; phases include `p2p`,
-`trailer` and `install-check`, the last one run from the installed folder),
-`cargo run --release -p nuvio-probe -- --profile 1`.
+Configurações opcionais de build (servidor da conta, repositório de atualizações) estão em [`local.properties.example`](local.properties.example). Publicação e releases automáticas: [`GITHUB_PUBLISH.md`](GITHUB_PUBLISH.md). Detalhes técnicos: [`docs/`](docs/).
 
-`nuvio-probe --backup <dir>` copies the original's stores to `<dir>` and verifies the copy. Those files
-contain account tokens: keep backups in a private folder, never inside the repository.
+## Créditos e direitos autorais
+
+- **Nuvio Desktop**, © equipe Nuvio / [NuvioMedia](https://github.com/NuvioMedia), licenciado sob a GPL-3.0. O Nuvio Astra é um projeto derivado dele (fork). O nome, a marca e o logotipo **Nuvio** pertencem aos seus respectivos donos.
+- **[Nuvio Engine](https://github.com/NuvioMedia/nuvio-engine)** (`nuvio_engine.dll`), © NuvioMedia, GPL-3.0. Inclui libtorrent (BSD-3-Clause), Boost (BSL-1.0) e OpenSSL (Apache-2.0).
+- **[mpv / libmpv](https://mpv.io)** e FFmpeg, sob a GPL.
+- **[Tauri](https://tauri.app)**, **React** e as bibliotecas Rust e JavaScript usadas, sob as licenças MIT e/ou Apache-2.0.
+
+Os textos completos das licenças de terceiros acompanham o instalador (pasta `licenses`) e estão em [`packaging/licenses`](packaging/licenses).
+
+## Aviso legal
+
+- O Nuvio Astra **não é afiliado, patrocinado nem endossado** pela equipe do Nuvio.
+- O aplicativo **não hospeda, distribui nem fornece** filmes, séries, canais ou qualquer outro conteúdo. Ele apenas exibe o que os addons escolhidos pelo usuário oferecem. Os addons são de terceiros e não fazem parte deste projeto.
+- Cada usuário é responsável pelos addons que instala e pelo conteúdo que acessa, de acordo com as leis do seu país. Ao usar torrent/P2P, o seu endereço IP fica visível para outros participantes da rede.
+- Marcas, capas e imagens que aparecem no aplicativo ou nas capturas pertencem aos seus respectivos donos.
+
+## Licença
+
+[GNU General Public License v3.0](LICENSE), a mesma do Nuvio Desktop. O código-fonte completo de cada versão está neste repositório.
