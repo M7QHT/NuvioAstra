@@ -6,6 +6,8 @@
 
 #![cfg(windows)]
 
+mod enhance;
+mod picture;
 pub mod mpv;
 pub mod player;
 pub mod win;
@@ -13,6 +15,8 @@ pub mod win;
 use std::path::PathBuf;
 use thiserror::Error;
 
+pub use enhance::{Enhancement, Motion};
+pub use picture::{AnimeMode, Picture};
 pub use player::{
     DecoderPriority, LoadRequest, Player, PlayerCommand, PlayerSnapshot, ResizeMode, SnapshotSink, SubtitleStyle, Track,
     VideoConfig,

@@ -29,6 +29,17 @@ The Windows installer ships these separately built components:
   On request, the maintainers of this repository provide the corresponding source of the exact
   build as required by the GPL.
 
+## Anime4K (shaders compiled into `Nuvio Astra.exe`)
+
+- Project: https://github.com/bloc97/Anime4K (MIT, Copyright (c) 2019 bloc97), commit
+  `7684e9586f8dcc738af08a1cdceb024cc184f426`: `Clamp_Highlights`, `Restore_CNN_{S,M,VL}`,
+  `Restore_CNN_Soft_{S,M,VL}`, `Upscale_CNN_x2_{S,M,VL}`, `Upscale_Denoise_CNN_x2_{M,VL}`,
+  `Denoise_Bilateral_Mode`, `Deblur_DoG`, `Thin_HQ`, `Darken_HQ`. The files are unmodified; at
+  playback only the strength `#define` of the last four changes with the level the user chose.
+- `AutoDownscalePre_x2` and `AutoDownscalePre_x4`, from the same project, are public domain
+  (Unlicense, https://unlicense.org; the text is at the top of each file).
+- License text: `anime4k/ANIME4K-LICENSE.txt`.
+
 ## Rust crates and the web interface (compiled into `Nuvio Astra.exe`)
 
 - Tauri 2 and its plugins (`tauri`, `tauri-plugin-updater`): MIT or Apache-2.0.
