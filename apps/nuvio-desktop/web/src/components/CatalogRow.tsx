@@ -11,9 +11,11 @@ interface Props {
   row: HomeRow;
   onOpen(item: MetaPreview): void;
   onLoaded?(row: HomeRow, items: MetaPreview[]): void;
+  /** Genre filter (catalogs of a collection folder). */
+  genre?: string | null;
 }
 
-export function CatalogRow({ row, onOpen, onLoaded }: Props) {
+export function CatalogRow({ row, onOpen, onLoaded, genre = null }: Props) {
   const [ref, inView] = useInView<HTMLElement>();
   const [items, setItems] = useState<MetaPreview[] | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -26,7 +28,7 @@ export function CatalogRow({ row, onOpen, onLoaded }: Props) {
       if (loading.current) return;
       loading.current = true;
       try {
-        const page = await api.catalogPage(row.key, skip);
+        const page = await api.catalogPage(row.key, skip, genre);
         setItems((prev) => {
           const seen = new Set((prev ?? []).map((i) => i.id));
           return [...(prev ?? []), ...page.items.filter((i) => !seen.has(i.id))];
@@ -39,7 +41,7 @@ export function CatalogRow({ row, onOpen, onLoaded }: Props) {
         loading.current = false;
       }
     },
-    [row, onLoaded],
+    [row, onLoaded, genre],
   );
 
   useEffect(() => {

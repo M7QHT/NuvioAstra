@@ -114,7 +114,13 @@ export function Details({ item, onBack }: Props) {
     const subtitle = video ? `${episodeLabel(video)} · ${video.title}` : data.meta.releaseInfo ?? undefined;
     const start = resumeAt !== null ? resumeAt / 1000 : null;
     void player
-      .play(() => api.playStream(stream.key, start, playbackItem(data.meta, video)), { title: data.meta.name, subtitle, view: "full" })
+      .play(() => api.playStream(stream.key, start, playbackItem(data.meta, video)), {
+        title: data.meta.name,
+        subtitle,
+        view: "full",
+        episode: video ? { meta: data.meta, video } : undefined,
+        torrent: stream.kind === "torrent",
+      })
       .then((ok) => {
         // A torrent whose player could not open: its P2P session ends too.
         if (!ok && stream.kind === "torrent") void api.torrentStop();

@@ -194,3 +194,19 @@ pub fn uitest_native_libraries(app: AppHandle) -> Result<Value, String> {
         "libmpv": mpv,
     }))
 }
+
+/// Collections of the active profile in the test data folder (phase `collections`): the copy only,
+/// never the real data nor the account.
+#[tauri::command]
+pub fn uitest_seed_collections(app: AppHandle, collections: Value) -> Result<(), String> {
+    report_path()?;
+    let state = app.state::<crate::AppState>();
+    state.app_store.set_collections(state.active_profile(), &collections).map_err(|e| e.to_string())
+}
+
+/// Phase `enhance`: breaks display sync on purpose (see `Player::break_display_sync`).
+#[tauri::command]
+pub async fn uitest_break_display_sync(app: AppHandle) -> Result<(), String> {
+    report_path()?;
+    app.state::<crate::AppState>().with_player(|p| p.break_display_sync().map_err(|e| e.to_string()))
+}

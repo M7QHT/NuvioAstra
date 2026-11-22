@@ -3,6 +3,7 @@ import { createRoot } from "react-dom/client";
 import { api } from "./api";
 import { invoke } from "./tauri";
 import { App } from "./App";
+import { PipView } from "./player/PipView";
 import { PlayerProvider } from "./player/PlayerContext";
 import { SelftestView } from "./player/SelftestView";
 import { runUiTest } from "./uitest/driver";
@@ -32,9 +33,11 @@ function Root() {
 }
 
 installDesktopFeel();
+// The picture-in-picture window loads this same page and shows only its controls (`pip.rs`).
+const pip = (window as { __NUVIO_PIP__?: boolean }).__NUVIO_PIP__ === true;
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
-    <Root />
+    {pip ? <PipView /> : <Root />}
   </StrictMode>,
 );

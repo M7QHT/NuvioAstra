@@ -1,5 +1,5 @@
 // Settings → Conta: Nuvio account (e-mail and password, as the original), sync state, last sync,
-// changes waiting, manual sync and sign-out. Everything is done by Rust; this page shows the status
+// changes waiting and sign-out (sync is automatic). Everything is done by Rust; this page shows the status
 // the backend confirms (never a "done" before the backend answered).
 
 import { useEffect, useState } from "react";
@@ -58,23 +58,35 @@ export function AccountPanel() {
     }
   };
 
+  /** Signed in: the sync starts by itself, except over another account's data. */
+  const connect = async () => {
+    const s = await api.accountConnect(false);
+    setAccount(s);
+    if (s.state === "needsReview") setMessage({ ok: true, text: "Conectado. Os dados deste computador são de outra conta: confira e confirme para sincronizar." });
+    else if (s.state === "error" || s.state === "offline") setMessage({ ok: false, text: s.lastError ?? "Não foi possível sincronizar agora." });
+    else setMessage({ ok: true, text: "Conectado e sincronizado." });
+  };
+
   const signIn = () =>
     run("signin", async () => {
       setAccount(await api.accountSignIn(email, password));
       setPassword("");
-      setMessage({ ok: true, text: "Conectado. Nada foi sincronizado ainda: revise a prévia e inicie a primeira sincronização quando quiser." });
+      await connect();
     });
 
   const signUp = () =>
     run("signup", async () => {
       const r = await api.accountSignUp(email, password);
       setMessage({ ok: true, text: r.message });
-      if (r.signedIn) setAccount(await api.accountStatus());
+      if (r.signedIn) {
+        setAccount(await api.accountStatus());
+        await connect();
+      }
     });
 
-  const syncNow = (confirm = false) =>
+  const startSync = () =>
     run("sync", async () => {
-      const s = await api.accountSyncNow(confirm);
+      const s = await api.accountSyncNow(true);
       setAccount(s);
       const r = s.lastReport;
       if (s.state === "needsReview") return;
@@ -92,8 +104,8 @@ export function AccountPanel() {
     if (!preview) return;
     const text = `Iniciar a primeira sincronização com ${account?.email ?? "esta conta"}?
 
-Serão enviados ${preview.toSend} item(ns) e recebidos ${preview.toReceive}; ${preview.conflicts} conflito(s) resolvido(s) pelas regras mostradas. Nada é apagado, e uma cópia verificada dos dados deste computador é feita antes.`;
-    if (window.confirm(text)) void syncNow(true);
+Serão enviados ${preview.toSend} item(ns) e recebidos ${preview.toReceive}; ${preview.conflicts} conflito(s) resolvido(s) pelas regras mostradas. Favoritos e histórico dos dois lados são mantidos; a ordem do Início e as preferências de reprodução passam a ser as da conta. Uma cópia verificada dos dados deste computador é feita antes.`;
+    if (window.confirm(text)) void startSync();
   };
 
   const signOut = () => {
@@ -121,14 +133,16 @@ Serão enviados ${preview.toSend} item(ns) e recebidos ${preview.toReceive}; ${p
                   <span className="sync-dot" aria-hidden /> {label.text}
                 </div>
                 <div className="muted small" data-testid="last-sync">Última sincronização: {when(account.lastSyncEpochMs)}</div>
+                {!reviewing && (
+                  <div className="muted small" data-testid="sync-automatic">
+                    {account.state === "error" || account.state === "offline"
+                      ? "Vai tentar de novo sozinho."
+                      : "Automática: recebe ao abrir e ao voltar para o app, envia a cada alteração."}
+                  </div>
+                )}
               </div>
             </div>
             <div className="account-actions">
-              {!reviewing && (
-                <button className="primary" onClick={() => void syncNow()} disabled={busy !== null || account.state === "syncing"} data-testid="sync-now">
-                  {busy === "sync" || account.state === "syncing" ? "Sincronizando…" : "Sincronizar agora"}
-                </button>
-              )}
               <button className="ghost" onClick={signOut} disabled={busy !== null} data-testid="sign-out">Sair</button>
             </div>
           </div>
@@ -161,8 +175,10 @@ Serão enviados ${preview.toSend} item(ns) e recebidos ${preview.toReceive}; ${p
             </div>
             {preview && <SyncPreview preview={preview} />}
             <p className="muted small">
-              Sincronizados com a conta Nuvio, por perfil: perfis (nome, cor, avatar, PIN), addons e a ordem deles, favoritos de filmes e séries, progresso de reprodução e títulos assistidos.
-              Funciona sem internet: as alterações ficam guardadas e são enviadas quando a conexão voltar.
+              Sincronizados com a conta Nuvio, por perfil: perfis (nome, cor, avatar, PIN), addons e a ordem deles, favoritos, continuar assistindo, títulos assistidos, coleções (recebidas), ordem e nomes do Início, e preferências de reprodução, áudio e legendas.
+              As preferências de reprodução são compartilhadas só entre computadores, como no Nuvio Desktop, e se a conta já tiver preferências salvas por ele.
+              Ficam só neste computador: Melhorar imagem, Movimento, Torrent/P2P, catálogos do destaque (o Nuvio também não envia essa escolha para a conta) e favoritos de canais.
+              Sem internet, as alterações ficam guardadas e são enviadas quando a conexão voltar.
             </p>
           </details>
         </>

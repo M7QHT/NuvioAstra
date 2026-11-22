@@ -13,7 +13,7 @@ let started = false;
 const listeners = new Set<() => void>();
 const emit = () => listeners.forEach((l) => l());
 
-function start() {
+export function start() {
   if (started) return;
   started = true;
   api.accountStatus().then(set, () => {});

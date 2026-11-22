@@ -4,7 +4,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { api, errorText } from "../api";
-import { ContinueCard } from "../components/ContinueWatching";
+import { ContinueCard, loadContinueWatching } from "../components/ContinueWatching";
 import { PosterCard } from "../components/PosterCard";
 import { useWhenVisible } from "../components/useInView";
 import {
@@ -71,11 +71,7 @@ function ContinueSection({ onResume }: { onResume(entry: HistoryEntry): void }) 
   const [items, setItems] = useState<HistoryEntry[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   useEffect(() => {
-    let cancelled = false;
-    api.libraryContinueWatching().then((i) => !cancelled && setItems(i), (e) => !cancelled && setError(errorText(e)));
-    return () => {
-      cancelled = true;
-    };
+    return loadContinueWatching(setItems, (e) => setError(errorText(e)));
   }, [version]);
   if (error) return <div className="row-error library-pad">Não foi possível ler o progresso: {error}</div>;
   if (!items) return <div className="screen-message">Carregando…</div>;
