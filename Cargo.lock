@@ -2228,7 +2228,7 @@ dependencies = [
 
 [[package]]
 name = "nuvio-core"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "reqwest",
  "serde",
@@ -2239,13 +2239,14 @@ dependencies = [
 
 [[package]]
 name = "nuvio-desktop"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "nuvio-core",
  "nuvio-p2p",
  "nuvio-player",
  "nuvio-store",
  "nuvio-sync",
+ "reqwest",
  "serde",
  "serde_json",
  "tauri",
@@ -2258,7 +2259,7 @@ dependencies = [
 
 [[package]]
 name = "nuvio-p2p"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "libloading 0.9.1",
  "serde",
@@ -2266,7 +2267,7 @@ dependencies = [
 
 [[package]]
 name = "nuvio-player"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "libloading 0.9.1",
  "serde",
@@ -2276,7 +2277,7 @@ dependencies = [
 
 [[package]]
 name = "nuvio-probe"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "nuvio-core",
  "nuvio-store",
@@ -2285,7 +2286,7 @@ dependencies = [
 
 [[package]]
 name = "nuvio-store"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "nuvio-core",
  "serde",
@@ -2295,7 +2296,7 @@ dependencies = [
 
 [[package]]
 name = "nuvio-sync"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "nuvio-core",
  "nuvio-store",

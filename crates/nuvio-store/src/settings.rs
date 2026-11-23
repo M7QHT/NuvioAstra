@@ -152,7 +152,15 @@ pub struct PlayerSettings {
     pub next_episode_threshold_minutes: f64,
     /// Astra only: 90–100, from where an episode or movie counts as watched (the original's is 90).
     pub watched_percent: i64,
+    /// Poster cards (kept with the player preferences so the account sync handles both).
+    pub cards: CardStyle,
+    /// Interface language (`selected_app_language` of the original: pt-BR, en or ar). None follows
+    /// the computer. Kept here so the account sync carries it with the other preferences.
+    pub app_language: Option<String>,
 }
+
+/// Interface languages Astra has (codes of the original's `AppLanguage`).
+pub const APP_LANGUAGES: &[&str] = &["pt-BR", "en", "ar"];
 
 impl Default for PlayerSettings {
     /// `PlayerSettingsUiState()` defaults.
@@ -176,6 +184,8 @@ impl Default for PlayerSettings {
             next_episode_threshold_percent: 99.0,
             next_episode_threshold_minutes: 2.0,
             watched_percent: crate::library::COMPLETION_PERCENT,
+            cards: CardStyle::default(),
+            app_language: None,
         }
     }
 }
@@ -186,6 +196,48 @@ pub struct ProfileSettings {
     pub player: PlayerSettings,
     pub home: HomeCatalogSettings,
     pub p2p: P2pSettings,
+    pub debrid: DebridSettings,
+}
+
+/// TorBox (the key itself is kept apart, encrypted). `enabled`: "Resolver links reproduzíveis".
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase", default)]
+pub struct DebridSettings {
+    pub enabled: bool,
+}
+
+impl Default for DebridSettings {
+    fn default() -> Self {
+        Self { enabled: true }
+    }
+}
+
+/// `PosterCardStyleRepository`: width (dp of the original), corners, landscape posters, labels.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase", default)]
+pub struct CardStyle {
+    pub width: i64,
+    pub radius: i64,
+    pub landscape: bool,
+    pub hide_labels: bool,
+}
+
+pub const CARD_WIDTHS: &[i64] = &[104, 112, 120, 126, 134, 140];
+pub const CARD_RADII: &[i64] = &[0, 4, 8, 12, 16];
+
+impl Default for CardStyle {
+    fn default() -> Self {
+        Self { width: 126, radius: 12, landscape: false, hide_labels: false }
+    }
+}
+
+impl CardStyle {
+    fn sanitized(mut self) -> Self {
+        let nearest = |v: i64, options: &[i64]| *options.iter().min_by_key(|o| (*o - v).abs()).expect("options");
+        self.width = nearest(self.width, CARD_WIDTHS);
+        self.radius = nearest(self.radius, CARD_RADII);
+        self
+    }
 }
 
 pub const MOTION_SMOOTHING: &[&str] = &["off", "steady", "fluid"];
@@ -314,6 +366,8 @@ impl PlayerSettings {
         self.next_episode_threshold_percent = half(self.next_episode_threshold_percent, 97.0, 100.0);
         self.next_episode_threshold_minutes = half(self.next_episode_threshold_minutes, 0.0, 3.5);
         self.watched_percent = self.watched_percent.clamp(90, 100);
+        self.cards = self.cards.sanitized();
+        self.app_language = self.app_language.and_then(|code| APP_LANGUAGES.iter().find(|l| l.eq_ignore_ascii_case(&code)).map(|l| l.to_string()));
         self
     }
 }
@@ -383,8 +437,23 @@ impl LegacyStore {
             next_episode_threshold_percent: number("next_episode_threshold_percent_v2").unwrap_or(d.next_episode_threshold_percent),
             next_episode_threshold_minutes: number("next_episode_threshold_minutes_before_end_v2").unwrap_or(d.next_episode_threshold_minutes),
             watched_percent: d.watched_percent,
+            cards: self.card_style(profile_index)?,
+            app_language: None,
         }
         .sanitized())
+    }
+
+    /// `PosterCardStyleStorage`: store `nuvio_poster_card_style`, key `poster_card_style_<profile>`.
+    pub fn card_style(&self, profile_index: i64) -> Result<CardStyle, StoreError> {
+        let store = self.read_store("nuvio_poster_card_style")?;
+        let saved: serde_json::Value = store.get(&format!("poster_card_style_{profile_index}")).and_then(|v| serde_json::from_str(v).ok()).unwrap_or_default();
+        let d = CardStyle::default();
+        Ok(CardStyle {
+            width: saved["widthDp"].as_i64().unwrap_or(d.width),
+            radius: saved["cornerRadiusDp"].as_i64().unwrap_or(d.radius),
+            landscape: saved["catalogLandscapeModeEnabled"].as_bool().unwrap_or(d.landscape),
+            hide_labels: saved["hideLabelsEnabled"].as_bool().unwrap_or(d.hide_labels),
+        })
     }
 
     /// Everything NextGen ports for one profile, read from the original's stores.
@@ -392,6 +461,7 @@ impl LegacyStore {
         Ok(ProfileSettings {
             player: self.player_settings(profile_index)?,
             home: self.home_catalog_settings(profile_index)?.unwrap_or_default(),
+            debrid: DebridSettings::default(),
             // P2P starts off in Astra: the notice is accepted again here.
             p2p: P2pSettings::default(),
         }
