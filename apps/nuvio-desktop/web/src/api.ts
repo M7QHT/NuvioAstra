@@ -1,10 +1,15 @@
 import { invoke } from "./tauri";
+import { message } from "./rustErrors";
 import type {
   EpgView,
   SubtitleFont,
   SubtitleFontList,
   SubtitleList,
   Moments,
+  TorboxStatus,
+  DownloadRequest,
+  DownloadItem,
+  DownloadsFolder,
   UpdateInfo,
   UpdateStatus,
   P2pStatus,
@@ -178,6 +183,21 @@ export const api = {
   playerSnapshot: () => invoke<PlayerSnapshot>("player_snapshot"),
   playerClose: () => invoke<void>("player_close"),
   /** Starts the P2P engine for a torrent stream (rejects with `P2P_CONSENT_REQUIRED` while P2P is off). */
+  torboxStatus: () => invoke<TorboxStatus>("torbox_status"),
+  torboxSaveKey: (key: string) => invoke<TorboxStatus>("torbox_save_key", { key }),
+  torboxRemoveKey: () => invoke<TorboxStatus>("torbox_remove_key"),
+  /** Which torrent/TorBox sources of the last searches TorBox has cached. */
+  torboxCheck: (keys: string[]) => invoke<Record<string, "cached" | "notCached">>("torbox_check", { keys }),
+  torboxPrepare: (key: string, season: number | null, episode: number | null) => invoke<{ filename: string | null; size: number | null }>("torbox_prepare", { key, season, episode }),
+  downloadStart: (request: DownloadRequest) => invoke<DownloadItem>("download_start", { request }),
+  downloadsList: () => invoke<DownloadItem[]>("downloads_list"),
+  downloadPause: (id: string) => invoke<void>("download_pause", { id }),
+  downloadResume: (id: string) => invoke<void>("download_resume", { id }),
+  downloadRemove: (id: string, deleteFile: boolean) => invoke<void>("download_remove", { id, deleteFile }),
+  downloadShow: (id: string) => invoke<void>("download_show", { id }),
+  downloadPlay: (id: string, startSeconds: number | null) => invoke<PlayerInfo>("download_play", { id, startSeconds }),
+  downloadsFolder: () => invoke<DownloadsFolder>("downloads_folder"),
+  downloadsChooseFolder: () => invoke<DownloadsFolder>("downloads_choose_folder"),
   torrentPrepare: (key: string) => invoke<TorrentPrepared>("torrent_prepare", { key }),
   torrentStop: () => invoke<void>("torrent_stop"),
   /** Program guide of one channel (cached in Rust until the current program ends). */
@@ -205,5 +225,8 @@ async function changed<T>(reason: "profile" | "addons", call: Promise<T>): Promi
 }
 
 export function errorText(error: unknown): string {
-  return typeof error === "string" ? error : error instanceof Error ? error.message : "erro desconhecido";
+  const raw = typeof error === "string" ? error : error instanceof Error ? error.message : "erro desconhecido";
+  // Rust commands answer in Portuguese; message() handles both the exact dictionary and the
+  // messages Rust builds with values (HTTP codes, engine output).
+  return message(raw);
 }

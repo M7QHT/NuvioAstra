@@ -7,6 +7,9 @@ import { api, errorText, onDataEpoch, onProfilesChanged, reloadProfileData } fro
 import { listen } from "./tauri";
 import { LockScreen } from "./screens/LockScreen";
 import { Welcome } from "./screens/Welcome";
+import { startAppLanguage } from "./appLanguage";
+import { startCardStyle } from "./cardStyle";
+import { useToasts } from "./toast";
 import { PinDialog } from "./components/PinDialog";
 import { ProfileMenu, ProfilesDialog } from "./components/ProfileMenu";
 import { Sidebar, type Tab } from "./components/Sidebar";
@@ -22,6 +25,7 @@ import { LiveTv } from "./screens/LiveTv";
 import { Search } from "./screens/Search";
 import { Settings } from "./screens/Settings";
 import { metaRef, type Bootstrap, type CollectionView, type FolderView, type HistoryEntry, type MetaPreview, type MetaRef, type ProfilesView } from "./types";
+import { t } from "./i18n";
 
 
 export function App() {
@@ -56,6 +60,8 @@ export function App() {
     api.profilesList().then(setProfiles, () => setProfilesFailed(true));
     api.welcomeNeeded().then((needed) => setWelcome(needed ? "waiting" : "none"), () => setWelcome("none"));
     startAccount();
+    startCardStyle();
+    startAppLanguage();
     // The event listeners just registered must hear the first sync.
     const ready = window.setTimeout(() => void api.appReady().catch(() => {}), 200);
     return () => window.clearTimeout(ready);
@@ -121,7 +127,7 @@ export function App() {
         if (player.session) await player.close();
         setProfiles(await api.profileSwitch(index));
       } catch (e) {
-        setOpenError(`Não foi possível trocar de perfil: ${errorText(e)}`);
+        setOpenError(t("Não foi possível trocar de perfil: {error}", { error: errorText(e) }));
       } finally {
         setSwitching(null);
       }
@@ -145,7 +151,7 @@ export function App() {
   const open = useCallback((item: MetaPreview) => {
     const ref = metaRef(item);
     if (typeof ref === "string") {
-      setOpenError(`Não foi possível abrir “${item.name}”: ${ref}.`);
+      setOpenError(t("Não foi possível abrir “{name}”: {error}.", { name: item.name, error: ref }));
       return;
     }
     setOpenError(null);
@@ -163,6 +169,7 @@ export function App() {
     setDetails({ contentType: entry.metaType, id: entry.metaId, name: entry.title });
   }, []);
 
+  const toasts = useToasts();
   const full = player.session?.view === "full";
   const profile = profiles?.profiles.find((p) => p.index === profiles.active) ?? null;
   const dataKey = `${profileEpoch}-${addonsEpoch}`;
@@ -195,14 +202,14 @@ export function App() {
         )}
         {manage && profiles && <ProfilesDialog view={profiles} onChanged={setProfiles} onClose={() => setManage(false)} />}
         {switching !== null && (
-          <div className="switching" role="status" data-testid="profile-switching">Trocando para {switching || "outro perfil"}…</div>
+          <div className="switching" role="status" data-testid="profile-switching">{t("Trocando para")} {switching || t("outro perfil")}…</div>
         )}
         <main className="content">
           <UpdateBanner automatic={appMode === "app"} />
-          {bootError && <div className="banner error">Não foi possível ler os dados do Nuvio Astra: {bootError}</div>}
+          {bootError && <div className="banner error">{t("Não foi possível ler os dados do Nuvio Astra:")} {bootError}</div>}
           {openError && <div className="banner error" role="alert">{openError}</div>}
           {boot && boot.addonsFailed > 0 && (
-            <div className="banner">{boot.addonsFailed} de {boot.addonsEnabled} addon(s) não responderam; os demais estão disponíveis.</div>
+            <div className="banner">{t("{failed} de {total} addon(s) não responderam; os demais estão disponíveis.", { failed: boot.addonsFailed, total: boot.addonsEnabled })}</div>
           )}
           <div className="screen" hidden={details !== null || folder !== null || tab !== "home"}>
             <Home key={dataKey} onOpen={open} onResume={resume} onOpenFolder={(collection, f) => setFolder({ collection, folder: f })} />
@@ -224,6 +231,11 @@ export function App() {
         </main>
       </div>
       {full && <FullPlayer />}
+      {toasts.length > 0 && (
+        <div className="toasts" role="status" aria-live="polite">
+          {toasts.map((t) => <div key={t.id} className={`toast ${t.error ? "error" : ""}`}>{t.text}</div>)}
+        </div>
+      )}
     </>
   );
 }

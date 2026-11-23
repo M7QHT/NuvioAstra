@@ -1,3 +1,4 @@
+import { t } from "./i18n";
 // Contracts of the Rust commands (apps/nuvio-desktop/src/api.rs, main.rs). Display data only:
 // stream URLs, addon URLs and tokens never reach the UI.
 
@@ -91,13 +92,16 @@ export interface PlayerSettings {
   skipSegmentsEnabled: boolean; autoSkipSegments: string[];
   nextEpisodeThresholdMode: "PERCENTAGE" | "MINUTES_BEFORE_END";
   nextEpisodeThresholdPercent: number; nextEpisodeThresholdMinutes: number; watchedPercent: number;
+  cards: CardStyle;
+  /** Interface language saved with the account (pt-BR, en, ar); null follows the computer. */
+  appLanguage?: string | null;
 }
 export interface HomeCatalogPreference { key: string; customTitle: string; enabled: boolean; heroSourceEnabled: boolean; order: number }
 export interface HomeCatalogSettings { heroEnabled: boolean; showCatalogType: boolean; hideUnreleasedContent: boolean; items: HomeCatalogPreference[]; heroCatalogs: string[] | null }
 export type P2pProfileName = "SOFT" | "BALANCED" | "FAST";
 export type P2pCacheName = "NONE" | "GB_2" | "GB_5" | "GB_10";
 export interface P2pSettings { enabled: boolean; enableUpload: boolean; hideTorrentStats: boolean; torrentProfile: P2pProfileName; cacheSize: P2pCacheName }
-export interface ProfileSettings { player: PlayerSettings; home: HomeCatalogSettings; p2p: P2pSettings }
+export interface ProfileSettings { player: PlayerSettings; home: HomeCatalogSettings; p2p: P2pSettings; debrid: DebridSettings }
 /** Selected file of a torrent prepared by the P2P engine (the local URL stays in Rust). */
 export interface TorrentPrepared { fileIndex: number; fileSize: number; fileName: string; fileCount: number }
 export interface P2pStatus {
@@ -137,8 +141,8 @@ export interface MetaRef { contentType: string; id: string; name: string; resume
 export function metaRef(item: Pick<MetaPreview, "contentType" | "id" | "name">): MetaRef | string {
   const contentType = typeof item.contentType === "string" ? item.contentType.trim() : "";
   const id = typeof item.id === "string" ? item.id.trim() : "";
-  if (!id) return "o addon não informou o identificador deste título";
-  if (!contentType) return "o addon não informou o tipo deste título (filme/série)";
+  if (!id) return t("o addon não informou o identificador deste título");
+  if (!contentType) return t("o addon não informou o tipo deste título (filme/série)");
   return { contentType, id, name: item.name };
 }
 export interface Details { meta: MetaDetails; seasons: number[]; addonName: string; trailer: MetaTrailer | null }
@@ -147,6 +151,22 @@ export type StreamKind = "direct" | "torrent" | "debrid" | "external" | "youTube
 export interface StreamEntry {
   key: string; name: string | null; description: string | null; kind: StreamKind;
   headerNames: string[]; notWebReady: boolean;
+  /** An addon's own TorBox source. */
+  torbox: boolean; filename: string | null; size: number | null;
+}
+export interface TorboxStatus { configured: boolean; enabled: boolean; account: string | null }
+export interface DebridSettings { enabled: boolean }
+export interface CardStyle { width: number; radius: number; landscape: boolean; hideLabels: boolean }
+export interface DownloadsFolder { folder: string; freeBytes: number | null }
+export interface DownloadRequest {
+  key: string; title: string; subtitle: string | null; poster: string | null;
+  season: number | null; episode: number | null; playback: PlaybackItem | null;
+}
+export interface DownloadItem {
+  id: string; title: string; subtitle: string | null; poster: string | null; folder: string; fileName: string | null;
+  status: "queued" | "preparing" | "downloading" | "paused" | "done" | "failed"; kind: "http" | "torbox" | "p2p";
+  sourceName: string; downloaded: number; total: number | null; speed: number; connections: number;
+  error: string | null; createdAt: number;
 }
 export interface StreamGroup { addonName: string; streams: StreamEntry[]; error: string | null }
 

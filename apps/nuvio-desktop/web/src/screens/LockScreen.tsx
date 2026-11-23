@@ -10,6 +10,7 @@ import { ProfileChooser } from "../components/ProfileChooser";
 import { Avatar } from "../components/ProfileMenu";
 import { SignInForm } from "../components/SignInForm";
 import type { ProfilesView } from "../types";
+import { t } from "../i18n";
 
 type Mode = "pin" | "profiles" | "account";
 
@@ -38,8 +39,8 @@ export function LockScreen({ view, onOpen }: Props) {
         if (asked) {
           setNote(
             account?.signedIn
-              ? "O PIN continua ativo ou não deu para falar com a conta. Se esta não é a conta dona do perfil, use outra conta."
-              : "Entre na conta Nuvio dona deste perfil para confirmar a remoção.",
+              ? t("O PIN continua ativo ou não deu para falar com a conta. Se esta não é a conta dona do perfil, use outra conta.")
+              : t("Entre na conta Nuvio dona deste perfil para confirmar a remoção."),
           );
         }
       } catch (e) {
@@ -84,43 +85,43 @@ export function LockScreen({ view, onOpen }: Props) {
         {mode === "pin" && (
           <>
             <Avatar profile={profile} size={72} />
-            <h1>Insira o PIN para {profile.name}</h1>
+            <h1>{t("Insira o PIN para")} {profile.name}</h1>
             <PinPad profile={profile} onUnlocked={() => void unlocked()} />
             {!account?.signedIn && account?.configured && (
               <p className="muted small" data-testid="lock-signed-out">
-                Este computador não está conectado à conta Nuvio. Se o PIN não for aceito ou você já o removeu, entre na conta.
+                {t("Este computador não está conectado à conta Nuvio. Se o PIN não for aceito ou você já o removeu, entre na conta")}.
               </p>
             )}
             {note && <p className="gate-note" role="status" data-testid="lock-note">{note}</p>}
             <div className="gate-actions">
               {account?.configured && (
                 <button className={account.signedIn ? "ghost" : "primary"} data-testid="lock-account" onClick={() => void openAccount()}>
-                  {account.signedIn ? "Usar outra conta" : "Entrar na conta Nuvio"}
+                  {account.signedIn ? t("Usar outra conta") : t("Entrar na conta Nuvio")}
                 </button>
               )}
-              <button className="ghost" disabled={checking} data-testid="lock-recheck" onClick={() => void check(true)}>{checking ? "Verificando…" : "Já removi o PIN"}</button>
-              {view.profiles.length > 1 && <button className="ghost" data-testid="lock-profiles" onClick={() => setMode("profiles")}>Trocar de perfil</button>}
+              <button className="ghost" disabled={checking} data-testid="lock-recheck" onClick={() => void check(true)}>{checking ? t("Verificando…") : t("Já removi o PIN")}</button>
+              {view.profiles.length > 1 && <button className="ghost" data-testid="lock-profiles" onClick={() => setMode("profiles")}>{t("Trocar de perfil")}</button>}
             </div>
           </>
         )}
         {mode === "profiles" && (
           <>
-            <h1>Quem está assistindo?</h1>
+            <h1>{t("Quem está assistindo?")}</h1>
             <ProfileChooser view={view} onChosen={onOpen} />
-            <button className="gate-link" onClick={() => setMode("pin")}>Voltar</button>
+            <button className="gate-link" onClick={() => setMode("pin")}>{t("Voltar")}</button>
           </>
         )}
         {mode === "account" && (
           <>
-            <h1>Entre na conta Nuvio</h1>
-            <p className="muted">Use a conta dona de “{profile.name}”. Seus dados deste computador continuam aqui.</p>
+            <h1>{t("Entre na conta Nuvio")}</h1>
+            <p className="muted">{t("Use a conta dona de “{name}”. Seus dados deste computador continuam aqui.", { name: profile.name })}</p>
             <SignInForm
               onSignedIn={() => {
                 setMode("pin");
                 void check(false);
               }}
             />
-            <button className="gate-link" data-testid="lock-back" onClick={() => setMode("pin")}>Voltar</button>
+            <button className="gate-link" data-testid="lock-back" onClick={() => setMode("pin")}>{t("Voltar")}</button>
           </>
         )}
       </div>

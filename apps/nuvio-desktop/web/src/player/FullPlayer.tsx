@@ -12,6 +12,8 @@ import { airDate, episodeTitle, hasAired, nextEpisode } from "./episodes";
 import { NextEpisodePanel } from "./NextEpisodePanel";
 import { PlaybackMoments, reachedNextEpisode, useMoments } from "./PlaybackMoments";
 import { SubtitleMenu } from "./SubtitleMenu";
+import { startDownload } from "../sources";
+import { t } from "../i18n";
 
 export function FullPlayer() {
   const player = usePlayer();
@@ -97,7 +99,7 @@ export function FullPlayer() {
   return (
     <div className={`full-player ${visible || choosingNext ? "" : "chrome-hidden"}`} onMouseMove={poke}>
       <div className="full-player-top">
-        <button className="back" onClick={() => void leave()} aria-label="Voltar">←</button>
+        <button className="back" onClick={() => void leave()} aria-label={t("Voltar")}>←</button>
         <div>
           <div className="full-player-title">{session?.title}</div>
           {session?.subtitle && <div className="muted">{session.subtitle}</div>}
@@ -106,8 +108,8 @@ export function FullPlayer() {
       </div>
       {pip && (
         <div className="pip-placeholder" data-testid="pip-placeholder">
-          <p>Reproduzindo em picture-in-picture</p>
-          <button className="ghost" onClick={() => void togglePip()}>Trazer de volta</button>
+          <p>{t("Reproduzindo em picture-in-picture")}</p>
+          <button className="ghost" onClick={() => void togglePip()}>{t("Trazer de volta")}</button>
         </div>
       )}
       <EnhanceNotice key={`notice-${snapshot?.session}`} snapshot={snapshot} />
@@ -117,11 +119,12 @@ export function FullPlayer() {
         fullscreen={player.windowFullscreen}
         onToggleFullscreen={toggleFullscreen}
         onPictureInPicture={() => void togglePip()}
+        onDownload={session?.download ? () => void startDownload(session.download!) : undefined}
         subtitles={snapshot ? <SubtitleMenu key={`subtitles-${snapshot.session}`} snapshot={snapshot} /> : undefined}
         next={
           next
             ? {
-                label: nextAired ? `${episodeTitle(next)} (N)` : `Não exibido · ${airDate(next.released)}`,
+                label: nextAired ? `${episodeTitle(next)} (N)` : t("Não exibido · {date}", { date: airDate(next.released) }),
                 disabled: !nextAired,
                 open: openNext,
               }

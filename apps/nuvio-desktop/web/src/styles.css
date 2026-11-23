@@ -912,6 +912,7 @@ img { -webkit-user-drag: none; }
   border: 1px solid rgba(47, 231, 242, .22); border-radius: 12px; background: rgba(10, 13, 20, .96);
 }
 .pc-enhance-title { margin: 6px 2px 2px; font-size: 11px; color: #8b95a9; text-transform: uppercase; letter-spacing: .5px; }
+.pc-sub-look { display: contents; }
 .controls .pc-level {
   display: flex; flex-direction: column; align-items: flex-start; gap: 1px; padding: 7px 10px; border: 1px solid transparent;
   border-radius: 8px; background: transparent; color: #e6fbfd; font: inherit; font-size: 13px; text-align: left; cursor: pointer;
@@ -1134,3 +1135,66 @@ html.pip-page, html.pip-page body, html.pip-page #root { background: transparent
 .pin-key { height: 46px; border: 1px solid var(--line); border-radius: 12px; background: var(--surface); color: var(--text); font: inherit; font-size: 19px; cursor: pointer; }
 .pin-key:hover { background: var(--surface-hover); }
 .hero-catalog { width: 320px; max-width: 100%; }
+
+/* ---------- Cards format, TorBox, badges, downloads, toasts ---------- */
+.card { width: var(--card-w, 150px); }
+.card.landscape { width: calc(var(--card-w, 150px) * 1.8); }
+.card.square { width: calc(var(--card-w, 150px) * 1.13); }
+.card-art { border-radius: var(--card-radius, var(--radius)); }
+.card.skeleton { height: calc(var(--card-w, 150px) * 1.5); }
+.cards-no-labels .card .card-title, .cards-no-labels .card .card-sub { display: none; }
+.stream-tag.instant { background: rgba(76, 200, 120, .16); color: #6fe0a0; }
+.stream-badges { grid-column: 1 / -1; display: flex; flex-wrap: wrap; gap: 5px; }
+.stream-badge { padding: 1px 7px; border: 1px solid var(--line); border-radius: 6px; color: var(--muted); font-size: 11.5px; }
+.context-menu {
+  position: fixed; z-index: 80; min-width: 190px; padding: 5px; display: flex; flex-direction: column;
+  background: var(--panel); border: 1px solid var(--line); border-radius: 10px; box-shadow: 0 12px 30px rgba(0,0,0,.45);
+}
+.context-menu button { padding: 8px 12px; border: 0; border-radius: 7px; background: transparent; color: var(--text); font: inherit; text-align: left; cursor: pointer; }
+.context-menu button:hover, .context-menu button:focus-visible { background: var(--surface-hover); }
+.torbox-preparing { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+.torbox-key { display: flex; gap: 8px; }
+.torbox-key input { width: 260px; max-width: 100%; padding: 8px 10px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); color: var(--text); font: inherit; }
+.downloads { display: flex; flex-direction: column; gap: 10px; }
+.downloads-folder { overflow-wrap: anywhere; }
+.download-row { display: flex; gap: 14px; align-items: center; padding: 12px; background: var(--panel); border-radius: 12px; }
+.download-art { flex: none; width: 54px; height: 80px; border-radius: 8px; object-fit: cover; background: var(--surface); }
+.download-main { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 5px; }
+.download-title { font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.download-file { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.download-progress { position: relative; height: 5px; border-radius: 3px; background: var(--surface); overflow: hidden; }
+.download-progress > div { height: 100%; background: var(--accent); transition: width .4s; }
+.download-row.failed .download-progress > div { background: var(--danger); }
+.download-actions { flex: none; display: flex; flex-wrap: wrap; gap: 6px; justify-content: flex-end; max-width: 340px; }
+@media (max-width: 900px) { .download-row { flex-wrap: wrap; } .download-actions { max-width: none; } }
+.toasts { position: fixed; left: 50%; bottom: 26px; z-index: 90; transform: translateX(-50%); display: flex; flex-direction: column; align-items: center; gap: 8px; pointer-events: none; }
+.toast { max-width: min(560px, calc(100vw - 32px)); padding: 10px 16px; border: 1px solid var(--line); border-radius: 10px; background: rgba(20, 22, 28, .96); color: var(--text); font-size: 13.5px; animation: fade-in .2s var(--ease); }
+.toast.error { border-color: rgba(255, 120, 100, .5); }
+/* ---- Right-to-left layout (Arabic UI) ---- */
+html[dir="rtl"] .sidebar { border-right: 0; border-left: 1px solid rgba(63, 147, 220, .18); }
+html[dir="rtl"] .settings-nav { border-right: 0; border-left: 1px solid var(--line); }
+html[dir="rtl"] .settings-nav .nav-item.active::before { left: auto; right: 0; border-radius: 3px 0 0 3px; }
+html[dir="rtl"] .row-header { padding-right: 0; padding-left: 32px; }
+html[dir="rtl"] .channel-main, html[dir="rtl"] .cw-card, html[dir="rtl"] .history-open,
+html[dir="rtl"] button.profile-chip, html[dir="rtl"] .episode { text-align: right; }
+html[dir="rtl"] .slider output { text-align: left; }
+html[dir="rtl"] .sync-table th, html[dir="rtl"] .sync-table td { text-align: right; }
+html[dir="rtl"] .sync-table th[scope="row"], html[dir="rtl"] .sync-table thead th:first-child { text-align: right; }
+html[dir="rtl"] .livetv-preview { padding: 10px 12px 24px 24px; }
+html[dir="rtl"] .player-status { left: auto; right: 14px; }
+html[dir="rtl"] .badge { left: auto; right: 12px; }
+html[dir="rtl"] .subtitle-preview span { left: 50%; }
+html[dir="rtl"] .profile-menu { left: auto; right: 86px; }
+html[dir="rtl"] .profile-option { text-align: right; }
+html[dir="rtl"] .addon-picker-menu { right: auto; left: 0; }
+html[dir="rtl"] .chip-viewport::before { left: auto; right: 0; transform: scaleX(-1); }
+
+/* Player chrome and timeline always read left-to-right, even in the Arabic UI. */
+html[dir="rtl"] .full-player,
+html[dir="rtl"] .controls,
+html[dir="rtl"] .controls .row,
+html[dir="rtl"] .full-player-top,
+html[dir="rtl"] .pc-panel { direction: ltr; }
+
+html[dir="rtl"] .context-menu button { text-align: right; }
+html[dir="rtl"] .hero-dots { right: auto; left: 40px; }

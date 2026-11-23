@@ -1,27 +1,31 @@
 import { memo } from "react";
 import type { MetaPreview } from "../types";
 import { FavoriteButton } from "./FavoriteButton";
+import { useCardStyle } from "../cardStyle";
+import { t } from "../i18n";
 
 interface Props {
   item: MetaPreview;
   onOpen(item: MetaPreview): void;
-  /** Shows "Filme"/"Série" on the art (Library grid). */
+  /** Shows the type label on the art (Library grid). */
   showType?: boolean;
 }
 
 export function typeLabel(contentType: string): string {
-  const t = contentType.toLowerCase();
-  if (t === "movie") return "Filme";
-  if (t === "series" || t === "tv" || t === "show") return "Série";
-  if (t === "anime") return "Anime";
+  const kind = contentType.toLowerCase();
+  if (kind === "movie") return t("Filme");
+  if (kind === "series" || kind === "tv" || kind === "show") return t("Série");
+  if (kind === "anime") return "Anime";
   return contentType;
 }
 
 /** Poster with native lazy loading/decoding: off-screen images are not downloaded. The favorite
  *  heart is a sibling of the card button (no nested buttons). */
 export const PosterCard = memo(function PosterCard({ item, onOpen, showType = false }: Props) {
-  const shape = item.posterShape === "Landscape" ? "landscape" : item.posterShape === "Square" ? "square" : "poster";
-  const image = shape === "landscape" ? item.landscapePoster ?? item.poster : item.poster;
+  const cards = useCardStyle();
+  const wide = cards.landscape && item.posterShape !== "Square" && !!(item.landscapePoster ?? item.banner);
+  const shape = item.posterShape === "Landscape" || wide ? "landscape" : item.posterShape === "Square" ? "square" : "poster";
+  const image = shape === "landscape" ? item.landscapePoster ?? (wide ? item.banner : null) ?? item.poster : item.poster;
   return (
     <div className={`card-wrap ${shape}`}>
       <button className={`card ${shape}`} onClick={() => onOpen(item)} title={item.name} data-id={item.id} data-content-type={item.contentType}>

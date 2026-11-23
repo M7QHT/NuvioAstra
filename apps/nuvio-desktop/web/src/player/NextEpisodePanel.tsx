@@ -2,13 +2,15 @@
 // original's episode sources panel).
 
 import { useEffect, useState } from "react";
-import { api } from "../api";
+import { api, errorText } from "../api";
 import { StreamList } from "../components/StreamList";
 import { TorrentStart } from "../components/TorrentStart";
+import { startDownload, viaTorbox, type TorboxStates } from "../sources";
 import { clock, playbackItem } from "../library";
 import type { MetaVideo, StreamEntry } from "../types";
 import { episodeTitle, type EpisodeContext } from "./episodes";
 import { usePlayer } from "./PlayerContext";
+import { t } from "../i18n";
 
 interface Props {
   context: EpisodeContext;
@@ -44,9 +46,26 @@ export function NextEpisodePanel({ context, next, finished, onClose }: Props) {
     return () => window.removeEventListener("keydown", block, true);
   }, [torrent]);
 
-  const play = async (stream: StreamEntry, prepared = false) => {
+  const downloadRequest = (stream: StreamEntry) => ({
+    key: stream.key, title: meta.name, subtitle: episodeTitle(next), poster: meta.poster,
+    season: next.season, episode: next.episode, playback: playbackItem(meta, next),
+  });
+
+  const play = async (stream: StreamEntry, prepared = false, torbox: TorboxStates = {}) => {
     if (starting) return;
-    if (stream.kind === "torrent" && !prepared) {
+    let direct = stream.kind === "direct";
+    if (!prepared && stream.kind !== "direct") {
+      setStarting(true);
+      try {
+        direct = await viaTorbox(stream, torbox, { season: next.season, episode: next.episode });
+      } catch (e) {
+        setStarting(false);
+        window.alert(errorText(e));
+        return;
+      }
+      setStarting(false);
+    }
+    if (stream.kind === "torrent" && !prepared && !direct) {
       void api.playerCommand({ type: "setPaused", paused: true });
       setTorrent(stream);
       return;
@@ -60,11 +79,12 @@ export function NextEpisodePanel({ context, next, finished, onClose }: Props) {
       view: "full",
       returnTo: null,
       episode: { meta, video: next },
-      torrent: stream.kind === "torrent",
+      torrent: stream.kind === "torrent" && !direct,
+      download: downloadRequest(stream),
     });
     if (ok) return onClose();
     setStarting(false);
-    if (stream.kind === "torrent") void api.torrentStop();
+    if (stream.kind === "torrent" && !direct) void api.torrentStop();
   };
 
   const cancelTorrent = () => {
@@ -76,24 +96,24 @@ export function NextEpisodePanel({ context, next, finished, onClose }: Props) {
 
   return (
     <div className="next-panel-layer" data-testid="next-panel">
-      <button className="next-panel-outside" aria-label="Fechar fontes" tabIndex={-1} onClick={onClose} />
-      <aside className="next-panel" aria-label="Fontes do próximo episódio">
+      <button className="next-panel-outside" aria-label={t("Fechar fontes")} tabIndex={-1} onClick={onClose} />
+      <aside className="next-panel" aria-label={t("Fontes do próximo episódio")}>
         <header className="sources-header">
           <div>
-            <h2>Próximo episódio</h2>
+            <h2>{t("Próximo episódio")}</h2>
             <div className="muted small">
               {episodeTitle(next)}
-              {resumeAt !== null && ` · continua de ${clock(resumeAt)}`}
+              {resumeAt !== null && ` · ${t("continua de {time}", { time: clock(resumeAt) })}`}
             </div>
           </div>
-          <button className="icon-btn" aria-label="Fechar fontes" onClick={onClose}>✕</button>
+          <button className="icon-btn" aria-label={t("Fechar fontes")} onClick={onClose}>✕</button>
         </header>
         <div className="sources-body">
-          {player.error && <div className="row-error">Falha ao reproduzir: {player.error}</div>}
+          {player.error && <div className="row-error">{t("Falha ao reproduzir:")} {player.error}</div>}
           {starting ? (
-            <div className="muted"><span className="spinner" aria-hidden /> Abrindo o próximo episódio…</div>
+            <div className="muted"><span className="spinner" aria-hidden /> {t("Abrindo o próximo episódio…")}</div>
           ) : (
-            <StreamList contentType={meta.contentType} id={next.id} onPlay={(stream) => void play(stream)} />
+            <StreamList contentType={meta.contentType} id={next.id} onPlay={(stream, torbox) => void play(stream, false, torbox)} onDownload={(stream) => void startDownload(downloadRequest(stream))} />
           )}
         </div>
       </aside>
