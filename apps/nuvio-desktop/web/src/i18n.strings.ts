@@ -1116,4 +1116,16 @@ export const STRINGS: Record<string, { en: string; ar: string }> = {
   "download não encontrado": { en: "download not found", ar: "التنزيل غير موجود" },
   "download não concluído": { en: "download not finished", ar: "التنزيل غير مكتمل" },
   "O arquivo não está mais na pasta.": { en: "The file is no longer in the folder.", ar: "لم يعد الملف موجودًا في المجلد." },
+  // Update window and frame-rate meter
+  "Você usa a {version}": { en: "You have {version}", ar: "لديك الإصدار {version}" },
+  "Melhorias e correções.": { en: "Improvements and fixes.", ar: "تحسينات وإصلاحات." },
+  "Vídeo": { en: "Video", ar: "الفيديو" },
+  "Na tela": { en: "On screen", ar: "على الشاشة" },
+  "Monitor": { en: "Monitor", ar: "الشاشة" },
+  "Dê play para medir.": { en: "Press play to measure.", ar: "شغّل الفيديو للقياس." },
+  "O ritmo do monitor ainda não foi acertado; o modo escolhido não está agindo agora.": { en: "The video is not timed to the monitor yet; the chosen mode is not working right now.", ar: "لم تتم مزامنة الفيديو مع الشاشة بعد؛ الوضع المختار لا يعمل الآن." },
+  "Cada atualização do monitor recebe um quadro novo, misturado entre os do vídeo.": { en: "Every monitor refresh gets a new frame, blended from the video's frames.", ar: "كل تحديث للشاشة يعرض إطارًا جديدًا ممزوجًا من إطارات الفيديو." },
+  "Os quadros do vídeo aparecem em ritmo igual, sem quadros a mais.": { en: "The video's frames are shown at an even pace, with no extra frames.", ar: "تُعرض إطارات الفيديو بإيقاع منتظم دون إطارات إضافية." },
+  "Quadros do vídeo como vieram, sem mistura.": { en: "The video's frames as they came, no blending.", ar: "إطارات الفيديو كما هي، دون مزج." },
+  "Perdendo {n} quadros por segundo: a placa de vídeo não está dando conta.": { en: "Losing {n} frames per second: the graphics card is not keeping up.", ar: "فقدان {n} إطار في الثانية: بطاقة الرسومات لا تواكب." },
 };
