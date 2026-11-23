@@ -1,1 +1,1 @@
-*.glsl linguist-vendored
+*.glsl linguist-vendored linguist-detectable=false
