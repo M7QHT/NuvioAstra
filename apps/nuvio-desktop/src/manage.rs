@@ -495,6 +495,9 @@ mod ipc_tests {
             playing: Default::default(),
             subtitle_choice: Default::default(),
             next_up: Default::default(),
+            torbox: nuvio_core::torbox::Torbox::new().unwrap(),
+            debrid: Default::default(),
+            downloads: Default::default(),
         };
         let app = mock_builder()
             .manage(state)

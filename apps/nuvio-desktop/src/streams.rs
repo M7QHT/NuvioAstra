@@ -56,6 +56,11 @@ pub struct StreamEntry {
     /// Header names only (values may be secrets).
     pub header_names: Vec<String>,
     pub not_web_ready: bool,
+    /// A TorBox source of the addon itself (`clientResolve`): plays with the TorBox key.
+    pub torbox: bool,
+    /// The file's name and size when the addon says (badges, downloads).
+    pub filename: Option<String>,
+    pub size: Option<i64>,
 }
 
 #[derive(Debug, Clone, Serialize)]
@@ -200,6 +205,9 @@ pub async fn search_in(
                             kind: kind_of(&stream),
                             header_names: stream.playback_request_headers().into_iter().map(|(k, _)| k).collect(),
                             not_web_ready: stream.behavior_hints.not_web_ready,
+                            torbox: nuvio_core::torbox::is_torbox_client_stream(&stream),
+                            filename: stream.behavior_hints.filename.clone(),
+                            size: stream.behavior_hints.video_size,
                         };
                         cached.insert(key, stream);
                         entry

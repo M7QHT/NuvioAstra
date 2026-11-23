@@ -18,6 +18,8 @@ mod p2p;
 mod pip;
 mod selftest;
 mod services;
+mod debrid;
+mod downloads;
 mod streams;
 mod watching;
 mod trailer;
@@ -71,6 +73,9 @@ pub struct AppState {
     pub subtitle_choice: Mutex<Option<watching::Choice>>,
     /// Episode lists behind "next episode" in Continue watching.
     pub next_up: services::next_up::Lists,
+    pub torbox: nuvio_core::torbox::Torbox,
+    pub debrid: debrid::Debrid,
+    pub downloads: downloads::Downloads,
 }
 
 #[derive(Debug, Deserialize)]
@@ -212,18 +217,51 @@ fn stream_play(
     progress: Option<nuvio_store::library::PlaybackItem>,
     previous_finished: Option<bool>,
 ) -> Result<PlayerInfo, String> {
-    let stream = state.streams.get(&key).ok_or("unknown stream (search again)")?;
-    let torrent = match streams::kind_of(&stream) {
-        streams::StreamKind::Direct => false,
+    let mut stream = state.streams.get(&key).ok_or("unknown stream (search again)")?;
+    // Prepared by `torbox_prepare`: the HTTP link of the cached file at TorBox.
+    let torbox = state.debrid.link(&key);
+    let torrent = match (streams::kind_of(&stream), &torbox) {
+        (_, Some(_)) => false,
+        (streams::StreamKind::Direct, None) => false,
         // Prepared by `torrent_prepare`: the engine's local HTTP route of the selected file.
-        streams::StreamKind::Torrent => true,
-        other => return Err(format!("stream type {other:?} is not playable in this stage")),
+        (streams::StreamKind::Torrent, None) => true,
+        (streams::StreamKind::Debrid, None) => return Err("Configure o TorBox em Configurações → TorBox para abrir esta fonte.".into()),
+        (other, None) => return Err(format!("stream type {other:?} is not playable in this stage")),
     };
-    let url = if torrent {
-        p2p::prepared_url(&state, &key)?
-    } else {
-        stream.playable_direct_url().ok_or("stream has no playable URL")?.to_string()
+    let url = match &torbox {
+        Some(link) => {
+            stream.behavior_hints.filename = link.filename.clone().or(stream.behavior_hints.filename);
+            link.url.clone()
+        }
+        None if torrent => p2p::prepared_url(&state, &key)?,
+        None => stream.playable_direct_url().ok_or("stream has no playable URL")?.to_string(),
     };
+    let headers = if torbox.is_some() || torrent { Vec::new() } else { stream.playback_request_headers() };
+    play_url(&app, &state, url, headers, &stream, torrent, start_seconds, progress, previous_finished)
+}
+
+/// Plays a finished download (its position is saved like the episode's).
+#[tauri::command]
+fn download_play(app: AppHandle, state: tauri::State<'_, AppState>, id: String, start_seconds: Option<f64>) -> Result<PlayerInfo, String> {
+    state.ensure_unlocked()?;
+    let (path, progress) = downloads::playable(&state, &id)?;
+    let mut stream = nuvio_core::stream::StreamItem { addon_name: "Download".into(), ..Default::default() };
+    stream.behavior_hints.filename = path.file_name().map(|n| n.to_string_lossy().into_owned());
+    play_url(&app, &state, path.display().to_string(), Vec::new(), &stream, false, start_seconds, progress, None)
+}
+
+#[allow(clippy::too_many_arguments)]
+fn play_url(
+    app: &AppHandle,
+    state: &AppState,
+    url: String,
+    headers: Vec<(String, String)>,
+    stream: &nuvio_core::stream::StreamItem,
+    torrent: bool,
+    start_seconds: Option<f64>,
+    progress: Option<nuvio_store::library::PlaybackItem>,
+    previous_finished: Option<bool>,
+) -> Result<PlayerInfo, String> {
 
     // The active profile's player settings (Settings → Reprodução / Áudio / Legendas).
     let profile = state.active_profile();
@@ -233,15 +271,14 @@ fn stream_play(
         Some(_) => services::playback::video_config(&settings),
         None => services::playback::video_config_unenhanced(&settings),
     };
-    let headers = if torrent { Vec::new() } else { stream.playback_request_headers() };
     if previous_finished == Some(true) {
         state.progress.mark_finished();
     }
     let source_url = url.clone();
-    let info = state.open(&app, url, headers, start_seconds.unwrap_or(0.0))?;
+    let info = state.open(app, url, headers, start_seconds.unwrap_or(0.0))?;
     let parent_id = progress.as_ref().map(|item| item.parent_meta_id.clone());
     if let Some(item) = &progress {
-        let playing = watching::Playing::new(info.session, item, &stream, &source_url);
+        let playing = watching::Playing::new(info.session, item, stream, &source_url);
         *state.playing.lock().expect("playing lock") = Some(Arc::new(playing));
     }
     if torrent {
@@ -464,6 +501,9 @@ fn main() {
                 playing: Mutex::new(None),
                 subtitle_choice: Mutex::new(None),
                 next_up: Default::default(),
+                torbox: nuvio_core::torbox::Torbox::new().expect("HTTP client"),
+                debrid: Default::default(),
+                downloads: Default::default(),
             }
         })
         // Official Tauri 2 updater: public key from tauri.conf.json, endpoint set per build.
@@ -477,6 +517,20 @@ fn main() {
             player_snapshot,
             player_close,
             player_video_config,
+            debrid::torbox_status,
+            debrid::torbox_save_key,
+            debrid::torbox_remove_key,
+            debrid::torbox_check,
+            debrid::torbox_prepare,
+            downloads::download_start,
+            downloads::downloads_list,
+            downloads::download_pause,
+            downloads::download_resume,
+            downloads::download_remove,
+            downloads::download_show,
+            downloads::downloads_folder,
+            downloads::downloads_choose_folder,
+            download_play,
             account::app_ready,
             account::welcome_needed,
             account::welcome_done,
