@@ -77,6 +77,10 @@ export const STRINGS: Record<string, { en: string; ar: string }> = {
   "Baixando": { en: "Downloading", ar: "جارٍ التنزيل" },
   "Verificando a assinatura…": { en: "Verifying the signature…", ar: "جارٍ التحقق من التوقيع…" },
   "Procurar atualizações": { en: "Check for updates", ar: "البحث عن تحديثات" },
+  "O Nuvio Astra também procura sozinho ao abrir e a cada 12 horas. Toda atualização é verificada antes de ser instalada.": {
+    en: "Nuvio Astra also checks automatically on startup and every 12 hours. Every update is verified before installation.",
+    ar: "يتحقق Nuvio Astra تلقائيًا عند التشغيل وكل 12 ساعة. يتم التحقق من كل تحديث قبل تثبيته.",
+  },
   "Verificar agora": { en: "Check now", ar: "تحقق الآن" },
   "Procurando…": { en: "Checking…", ar: "جارٍ البحث…" },
   "Atualizando…": { en: "Updating…", ar: "جارٍ التحديث…" },

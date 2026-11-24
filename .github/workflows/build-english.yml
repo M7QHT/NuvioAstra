@@ -58,6 +58,9 @@ jobs:
           npm run build
 
       - name: Build (release)
+        env:
+          NUVIO_UPDATE_REPOSITORY: ${{ github.repository }}
+          NUVIO_BUILD_NUMBER: ${{ github.run_number }}
         run: cargo build --release -p nuvio-desktop
 
       - name: NSIS

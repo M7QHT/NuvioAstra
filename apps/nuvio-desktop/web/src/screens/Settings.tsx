@@ -384,7 +384,7 @@ function UpdatesSection() {
       {s && !s.configured && <p className="muted">{t("Esta compilação não tem atualizações automáticas configuradas (compilação local). As versões publicadas pelo GitHub têm.")}</p>}
       {s?.configured && (
         <>
-          <Row title={t("Procurar atualizações")} description={t("O Nuvio Astra também procura sozinho ao abrir e a cada 6 horas. Toda atualização é verificada pela assinatura antes de ser instalada.")}>
+          <Row title={t("Procurar atualizações")} description={t("O Nuvio Astra também procura sozinho ao abrir e a cada 12 horas. Toda atualização é verificada antes de ser instalada.")}>
             <button className="ghost" disabled={u.checking || !!u.installing} onClick={() => void checkForUpdates()} data-testid="update-check">
               {u.checking ? t("Procurando…") : t("Verificar agora")}
             </button>

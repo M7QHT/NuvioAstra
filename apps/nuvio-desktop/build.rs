@@ -18,7 +18,7 @@ fn main() {
     for props in &candidates {
         println!("cargo:rerun-if-changed={}", props.display());
     }
-    for key in ["NUVIO_SUPABASE_URL", "NUVIO_SUPABASE_ANON_KEY", "NUVIO_SUPABASE_FALLBACK_URL", "NUVIO_UPDATE_REPOSITORY"] {
+    for key in ["NUVIO_SUPABASE_URL", "NUVIO_SUPABASE_ANON_KEY", "NUVIO_SUPABASE_FALLBACK_URL", "NUVIO_UPDATE_REPOSITORY", "NUVIO_BUILD_NUMBER"] {
         println!("cargo:rerun-if-env-changed={key}");
     }
     let file = candidates.iter().find_map(|p| std::fs::read_to_string(p).ok()).unwrap_or_default();
@@ -50,6 +50,10 @@ fn main() {
             panic!("NUVIO_UPDATE_REPOSITORY must be `owner/repo`");
         }
         println!("cargo:rustc-env=NUVIO_UPDATE_REPOSITORY={repository}");
+    }
+    let build_number = value("NUVIO_BUILD_NUMBER");
+    if !build_number.is_empty() && build_number.chars().all(|c| c.is_ascii_digit()) {
+        println!("cargo:rustc-env=NUVIO_BUILD_NUMBER={build_number}");
     }
     tauri_build::build()
 }

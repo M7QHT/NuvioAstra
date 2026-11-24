@@ -1,6 +1,6 @@
-// App updates (official Tauri updater, driven by Rust): one shared state for the banner at the
-// top and Settings → Atualizações. Automatic check right after start and every 6 h (normal app mode
-// only); t("Depois") hides the banner for that version until the app restarts.
+// App updates (official Tauri updater or GitHub Releases, driven by Rust): one shared state for the
+// banner at the top and Settings → Atualizações. Automatic check right after start and every 12 h
+// (normal app mode only); t("Depois") hides the banner for that version until the app restarts.
 
 import { useEffect, useSyncExternalStore } from "react";
 import { api, errorText } from "./api";
@@ -62,7 +62,7 @@ export function startAutomaticChecks() {
   started = true;
   // Right after the window opens (a short delay keeps the first screen fluid).
   window.setTimeout(() => void checkForUpdates(), 800);
-  window.setInterval(() => void checkForUpdates(), 6 * 60 * 60 * 1000);
+  window.setInterval(() => void checkForUpdates(), 12 * 60 * 60 * 1000);
 }
 
 function init() {
