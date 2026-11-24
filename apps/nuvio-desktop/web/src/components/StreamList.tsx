@@ -87,13 +87,14 @@ export function StreamList({ contentType, id, activeKey, onPlay, onDownload }: P
     return true;
   };
 
-  const filterChips: { id: typeof filter; label: string; count: number }[] = [
+  const allFilterChips: { id: typeof filter; label: string; count: number }[] = [
     { id: "all", label: "All", count: allStreams.length },
     { id: "4k", label: "4K", count: allStreams.filter((s) => matchesFilter(s, "4k")).length },
     { id: "1080p", label: "1080p", count: allStreams.filter((s) => matchesFilter(s, "1080p")).length },
     { id: "hdr", label: "HDR / DV", count: allStreams.filter((s) => matchesFilter(s, "hdr")).length },
     { id: "instant", label: "Instant / Direct", count: allStreams.filter((s) => matchesFilter(s, "instant")).length },
-  ].filter((c) => c.id === "all" || (c.count > 0 && c.count < allStreams.length));
+  ];
+  const filterChips = allFilterChips.filter((c) => c.id === "all" || (c.count > 0 && c.count < allStreams.length));
 
   return (
     <div className="streams">
