@@ -12,11 +12,12 @@ interface Props {
   row: HomeRow;
   onOpen(item: MetaPreview): void;
   onLoaded?(row: HomeRow, items: MetaPreview[]): void;
+  onSeeAll?(row: HomeRow): void;
   /** Genre filter (catalogs of a collection folder). */
   genre?: string | null;
 }
 
-export function CatalogRow({ row, onOpen, onLoaded, genre = null }: Props) {
+export function CatalogRow({ row, onOpen, onLoaded, onSeeAll, genre = null }: Props) {
   const [ref, inView] = useInView<HTMLElement>();
   const [items, setItems] = useState<MetaPreview[] | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -67,6 +68,9 @@ export function CatalogRow({ row, onOpen, onLoaded, genre = null }: Props) {
         <span className="spacer" />
         {items && (
           <>
+            {onSeeAll && !genre && (
+              <button className="see-all-btn" onClick={() => onSeeAll(row)}>See all →</button>
+            )}
             <button className="icon-btn" aria-label={t("Anterior")} onClick={() => scrollBy(-1)}>‹</button>
             <button className="icon-btn" aria-label={t("Próximo")} onClick={() => scrollBy(1)}>›</button>
           </>

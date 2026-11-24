@@ -1403,3 +1403,103 @@ html[dir="rtl"] .hero-dots { right: auto; left: 40px; }
 .episode-thumb.blurred:hover img {
   filter: blur(5px);
 }
+
+/* ---- Sources Filter Bar ---- */
+.stream-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 10px;
+}
+.stream-filter-chip {
+  font-size: 12px;
+  padding: 4px 10px;
+}
+
+/* ---- Player Controls: Ends at time ---- */
+.controls .ends-at {
+  color: rgba(230, 251, 253, 0.58);
+  font-size: 13px;
+  margin-inline-start: 4px;
+}
+@media (max-width: 1000px) {
+  .controls .ends-at { display: none; }
+}
+
+/* ---- Home: See All button ---- */
+.see-all-btn {
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--text);
+  border-radius: 8px;
+  padding: 4px 10px;
+  font-size: 12.5px;
+  font-weight: 600;
+  cursor: pointer;
+  margin-inline-end: 6px;
+  transition: background .15s, border-color .15s;
+}
+.see-all-btn:hover {
+  background: rgba(47, 231, 242, 0.14);
+  border-color: rgba(47, 231, 242, 0.45);
+}
+
+/* ---- Full Catalog Grid & Discover Screen ---- */
+.catalog-grid-screen,
+.discover-screen {
+  padding: 20px 26px 40px;
+}
+.catalog-grid-head {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 18px;
+}
+.catalog-grid-head h1,
+.discover-head h1 {
+  margin: 0;
+  font-size: 24px;
+}
+.discover-head {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+.discover-controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+}
+.discover-types,
+.discover-genres {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.discover-select {
+  background: var(--surface);
+  color: var(--text);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 9px;
+  padding: 6px 12px;
+  font-size: 13px;
+  max-width: 340px;
+}
+.poster-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(var(--card-w, 162px), 1fr));
+  gap: 18px 14px;
+}
+.poster-grid .card-wrap {
+  width: 100%;
+}
+.poster-grid .card {
+  width: 100%;
+}
+.catalog-grid-more {
+  display: flex;
+  justify-content: center;
+  margin-top: 24px;
+}

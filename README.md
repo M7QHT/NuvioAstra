@@ -41,6 +41,12 @@ This fork stays synced with **100% of upstream `ScottGzin/NuvioAstra`** (includi
 | **Blur Unwatched Episode Thumbnails** | ❌ | ✅ Spoiler blur toggle in Settings + quick button on Details |
 | **Auto-Fallback on Source Failure** | ❌ | ✅ Automatically tries next playable direct source on failure |
 | **Active Playing Source Highlight** | ❌ | ✅ Highlights current stream with `Playing` badge |
+| **Right-Click Poster & Continue Watching Menus** | ❌ | ✅ Quick actions: Details, Library, Mark Watched, Remove, Copy title |
+| **Sources Filter Bar** | ❌ | ✅ Instant chips (`All`, `4K`, `1080p`, `HDR/DV`, `Instant/Direct`) |
+| **Mark Entire Season Watched** | ❌ | ✅ One-click season watched toggle + toast feedback |
+| **Player Finish Time (`Ends at HH:MM`)** | ❌ | ✅ Live finish time next to playback clock (speed-aware) |
+| **Desktop Navigation (`Mouse Back`, `Alt+←`, `Ctrl+K`)** | ❌ | ✅ Browser-like back navigation & instant `/` or `Ctrl+K` search |
+| **See All Catalog Grid & Discover Screen** | ❌ | ✅ Full-page `See all →` grids + Stremio-style **Discover** tab with genre/type filters |
 
 ---
 

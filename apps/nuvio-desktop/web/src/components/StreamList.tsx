@@ -28,6 +28,7 @@ export function StreamList({ contentType, id, activeKey, onPlay, onDownload }: P
   const [groups, setGroups] = useState<StreamGroup[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [torbox, setTorbox] = useState<TorboxStates>({});
+  const [filter, setFilter] = useState<"all" | "4k" | "1080p" | "hdr" | "instant">("all");
   const [menu, setMenu] = useState<{ stream: StreamEntry; x: number; y: number } | null>(null);
   const menuRef = useRef<HTMLDivElement>(null);
 
@@ -36,6 +37,7 @@ export function StreamList({ contentType, id, activeKey, onPlay, onDownload }: P
     setGroups(null);
     setError(null);
     setTorbox({});
+    setFilter("all");
     api.streams(contentType, id).then(
       (g) => {
         if (cancelled) return;
@@ -75,15 +77,49 @@ export function StreamList({ contentType, id, activeKey, onPlay, onDownload }: P
 
   const playable = (s: StreamEntry) => s.kind === "direct" || s.kind === "torrent" || (s.kind === "debrid" && (s.torbox && torbox[s.key] === "cached"));
 
+  const matchesFilter = (s: StreamEntry, f: typeof filter) => {
+    if (f === "all") return true;
+    const b = badgesOf(s).map((x) => x.toLowerCase());
+    if (f === "4k") return b.some((x) => x === "4k" || x === "2160p");
+    if (f === "1080p") return b.some((x) => x === "1080p");
+    if (f === "hdr") return b.some((x) => x.includes("hdr") || x.includes("dv") || x.includes("dolby vision"));
+    if (f === "instant") return torbox[s.key] === "cached" || s.kind === "direct";
+    return true;
+  };
+
+  const filterChips: { id: typeof filter; label: string; count: number }[] = [
+    { id: "all", label: "All", count: allStreams.length },
+    { id: "4k", label: "4K", count: allStreams.filter((s) => matchesFilter(s, "4k")).length },
+    { id: "1080p", label: "1080p", count: allStreams.filter((s) => matchesFilter(s, "1080p")).length },
+    { id: "hdr", label: "HDR / DV", count: allStreams.filter((s) => matchesFilter(s, "hdr")).length },
+    { id: "instant", label: "Instant / Direct", count: allStreams.filter((s) => matchesFilter(s, "instant")).length },
+  ].filter((c) => c.id === "all" || (c.count > 0 && c.count < allStreams.length));
+
   return (
     <div className="streams">
-      {groups.map((group) => (
+      {filterChips.length > 1 && (
+        <div className="stream-filters" role="group" aria-label="Filter sources">
+          {filterChips.map((c) => (
+            <button
+              key={c.id}
+              className={`chip stream-filter-chip ${filter === c.id ? "active" : ""}`}
+              onClick={() => setFilter(c.id)}
+            >
+              {c.label} <span className="muted small">{c.count}</span>
+            </button>
+          ))}
+        </div>
+      )}
+      {groups.map((group) => {
+        const visibleStreams = group.streams.filter((s) => matchesFilter(s, filter));
+        if (filter !== "all" && visibleStreams.length === 0 && !group.error) return null;
+        return (
         <div key={group.addonName} className="stream-group">
           <div className="stream-group-title">
             {group.addonName}
-            <span className="muted small"> · {group.error ? t("erro: {error}", { error: message(group.error) }) : t("{count} fonte(s)", { count: group.streams.length })}</span>
+            <span className="muted small"> · {group.error ? t("erro: {error}", { error: message(group.error) }) : t("{count} fonte(s)", { count: visibleStreams.length })}</span>
           </div>
-          {group.streams.map((s) => {
+          {visibleStreams.map((s) => {
             const ok = playable(s);
             const instant = torbox[s.key] === "cached";
             const isCurrent = Boolean(activeKey && activeKey === s.key);
@@ -119,7 +155,8 @@ export function StreamList({ contentType, id, activeKey, onPlay, onDownload }: P
             );
           })}
         </div>
-      ))}
+        );
+      })}
       {/* On the page itself: the sources panel's blur would clip and move a fixed menu. */}
       {menu && createPortal(
         <div ref={menuRef} className="context-menu" role="menu" style={{ left: Math.min(menu.x, window.innerWidth - 210), top: Math.min(menu.y, window.innerHeight - 100) }} data-testid="stream-menu">

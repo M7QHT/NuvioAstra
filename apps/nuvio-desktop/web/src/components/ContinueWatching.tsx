@@ -2,9 +2,11 @@
 // one is finished, the next episode (the original's rules, computed in Rust). The row draws at
 // once from what is known; the episode lists of the next episodes complete it.
 
-import { memo, useEffect, useState } from "react";
+import { memo, useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { api } from "../api";
 import { clock, episodeCode, lastWatched, remaining, removeHistory, useLibraryVersion } from "../library";
+import { showToast } from "../toast";
 import type { HistoryEntry } from "../types";
 import { airDate } from "../player/episodes";
 import { t } from "../i18n";
@@ -12,17 +14,71 @@ import { t } from "../i18n";
 interface CardProps {
   entry: HistoryEntry;
   onResume(entry: HistoryEntry): void;
+  onOpenDetails?(entry: HistoryEntry): void;
   onRemove?(entry: HistoryEntry): void;
 }
 
-export const ContinueCard = memo(function ContinueCard({ entry, onResume, onRemove }: CardProps) {
+export const ContinueCard = memo(function ContinueCard({ entry, onResume, onOpenDetails, onRemove }: CardProps) {
+  const [menu, setMenu] = useState<{ x: number; y: number } | null>(null);
+  const menuRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!menu) return;
+    const close = (e: Event) => {
+      if (e instanceof KeyboardEvent && e.key !== "Escape") return;
+      if (e instanceof PointerEvent && menuRef.current?.contains(e.target as Node)) return;
+      setMenu(null);
+    };
+    window.addEventListener("pointerdown", close, true);
+    window.addEventListener("keydown", close, true);
+    window.addEventListener("blur", close);
+    return () => {
+      window.removeEventListener("pointerdown", close, true);
+      window.removeEventListener("keydown", close, true);
+      window.removeEventListener("blur", close);
+    };
+  }, [menu]);
+
   const image = entry.background ?? entry.poster;
   const code = episodeCode(entry);
   const left = remaining(entry);
   const fresh = entry.nextUp && !entry.inProgress;
+
+  const markWatched = async () => {
+    setMenu(null);
+    try {
+      await api.librarySetWatched(
+        {
+          id: entry.metaId,
+          contentType: entry.metaType,
+          name: entry.title,
+          poster: entry.poster,
+          releaseInfo: null,
+          season: entry.season,
+          episode: entry.episode,
+          videoId: entry.videoId ?? entry.metaId,
+        },
+        true,
+      );
+      showToast(`Marked "${entry.title}" as watched`);
+    } catch {
+      showToast("Failed to mark as watched", true);
+    }
+  };
+
   return (
     <div className="cw-wrap">
-      <button className="cw-card" onClick={() => onResume(entry)} data-key={entry.key} data-next-up={entry.nextUp || undefined} title={fresh ? t("Próximo episódio de {title}", { title: entry.title }) : t("Continuar {title}", { title: entry.title })}>
+      <button
+        className="cw-card"
+        onClick={() => onResume(entry)}
+        onContextMenu={(e) => {
+          e.preventDefault();
+          setMenu({ x: e.clientX, y: e.clientY });
+        }}
+        data-key={entry.key}
+        data-next-up={entry.nextUp || undefined}
+        title={fresh ? t("Próximo episódio de {title}", { title: entry.title }) : t("Continuar {title}", { title: entry.title })}
+      >
         <div className="cw-art">
           {image ? <img src={image} alt="" loading="lazy" decoding="async" draggable={false} /> : <span className="card-fallback">{entry.title}</span>}
           <span className="cw-play" aria-hidden>▶</span>
@@ -46,6 +102,36 @@ export const ContinueCard = memo(function ContinueCard({ entry, onResume, onRemo
         <button className="fav-btn icon" aria-label={t("Remover {title} de Continuar assistindo", { title: entry.title })} title={t("Remover")} data-testid="cw-remove" onClick={() => onRemove(entry)}>
           ✕
         </button>
+      )}
+      {menu && createPortal(
+        <div
+          ref={menuRef}
+          className="context-menu"
+          role="menu"
+          style={{ left: Math.min(menu.x, window.innerWidth - 230), top: Math.min(menu.y, window.innerHeight - 210) }}
+          data-testid="cw-menu"
+        >
+          <button role="menuitem" onClick={() => { setMenu(null); onResume(entry); }}>
+            ▶ {fresh ? "Watch next episode" : `Resume (${clock(entry.positionMs)})`}
+          </button>
+          {onOpenDetails && (
+            <button role="menuitem" onClick={() => { setMenu(null); onOpenDetails(entry); }}>
+              Open details
+            </button>
+          )}
+          <button role="menuitem" onClick={() => void markWatched()}>
+            ✓ Mark as watched
+          </button>
+          {onRemove && (
+            <button role="menuitem" onClick={() => { setMenu(null); onRemove(entry); showToast(`Removed "${entry.title}"`); }}>
+              ✕ Remove from Continue watching
+            </button>
+          )}
+          <button role="menuitem" onClick={() => { setMenu(null); void navigator.clipboard?.writeText(entry.title).then(() => showToast(`Copied "${entry.title}"`)); }}>
+            Copy title
+          </button>
+        </div>,
+        document.body,
       )}
     </div>
   );
@@ -76,7 +162,7 @@ export function loadContinueWatching(show: (items: HistoryEntry[]) => void, fail
 }
 
 /** Home row (hidden when empty), like the original's Continue watching section at the top. */
-export function ContinueWatchingRow({ onResume }: { onResume(entry: HistoryEntry): void }) {
+export function ContinueWatchingRow({ onResume, onOpenDetails }: { onResume(entry: HistoryEntry): void; onOpenDetails?(entry: HistoryEntry): void }) {
   const version = useLibraryVersion();
   const [items, setItems] = useState<HistoryEntry[]>([]);
   useEffect(() => loadContinueWatching(setItems), [version]);
@@ -88,7 +174,7 @@ export function ContinueWatchingRow({ onResume }: { onResume(entry: HistoryEntry
       </header>
       <div className="row-track">
         {items.map((e) => (
-          <ContinueCard key={e.key} entry={e} onResume={onResume} onRemove={(x) => void removeHistory(x.key)} />
+          <ContinueCard key={e.key} entry={e} onResume={onResume} onOpenDetails={onOpenDetails} onRemove={(x) => void removeHistory(x.key)} />
         ))}
       </div>
     </section>

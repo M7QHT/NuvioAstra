@@ -16,7 +16,9 @@ import { Sidebar, type Tab } from "./components/Sidebar";
 import { UpdateBanner } from "./components/UpdateBanner";
 import { FullPlayer } from "./player/FullPlayer";
 import { usePlayer } from "./player/PlayerContext";
+import { CatalogGrid } from "./screens/CatalogGrid";
 import { Details } from "./screens/Details";
+import { Discover } from "./screens/Discover";
 import { Folder } from "./screens/Folder";
 import { Home } from "./screens/Home";
 import { Library } from "./screens/Library";
@@ -24,7 +26,7 @@ import { resumeTarget } from "./library";
 import { LiveTv } from "./screens/LiveTv";
 import { Search } from "./screens/Search";
 import { Settings } from "./screens/Settings";
-import { metaRef, type Bootstrap, type CollectionView, type FolderView, type HistoryEntry, type MetaPreview, type MetaRef, type ProfilesView } from "./types";
+import { metaRef, type Bootstrap, type CollectionView, type FolderView, type HistoryEntry, type HomeRow, type MetaPreview, type MetaRef, type ProfilesView } from "./types";
 import { t } from "./i18n";
 
 
@@ -40,6 +42,8 @@ export function App() {
   const [details, setDetails] = useState<MetaRef | null>(null);
   /** Collection folder opened from Home (stays under the details of a title opened from it). */
   const [folder, setFolder] = useState<{ collection: CollectionView; folder: FolderView } | null>(null);
+  /** Full catalog grid opened via "See all →" on a Home row. */
+  const [catalog, setCatalog] = useState<HomeRow | null>(null);
   const [openError, setOpenError] = useState<string | null>(null);
   const [profiles, setProfiles] = useState<ProfilesView | null>(null);
   const [profilesFailed, setProfilesFailed] = useState(false);
@@ -101,12 +105,14 @@ export function App() {
           setProfileEpoch((e) => e + 1);
           setDetails(null);
           setFolder(null);
+          setCatalog(null);
           setOpenError(null);
           setBoot(null);
           api.profilesList().then(setProfiles, () => {});
         } else {
           setAddonsEpoch((e) => e + 1);
           setFolder(null); // its catalogs were resolved with the previous addons
+          setCatalog(null);
         }
         api.bootstrap().then(setBoot, (e) => setBootError(errorText(e)));
       }),
@@ -141,10 +147,52 @@ export function App() {
       if (next !== "tv" && player.session?.view === "embedded") void player.close();
       setDetails(null);
       setFolder(null);
+      setCatalog(null);
       setTab(next);
     },
     [player],
   );
+
+  // Desktop UX navigation: Mouse Back button (button 3), Alt+← to go back, Ctrl+K or / for quick search.
+  const goBack = useCallback(() => {
+    if (details) setDetails(null);
+    else if (catalog) setCatalog(null);
+    else if (folder) setFolder(null);
+    else if (tab !== "home") select("home");
+  }, [catalog, details, folder, select, tab]);
+
+  useEffect(() => {
+    const onMouseUp = (e: MouseEvent) => {
+      if (player.session?.view === "full") return;
+      if (e.button === 3) {
+        e.preventDefault();
+        goBack();
+      }
+    };
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (player.session?.view === "full") return;
+      const tag = (e.target as HTMLElement)?.tagName;
+      const typing = tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT";
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "k") {
+        e.preventDefault();
+        select("search");
+        window.setTimeout(() => document.querySelector<HTMLInputElement>('.search input, input[type="search"]')?.focus(), 40);
+      } else if (!typing && e.key === "/" && !e.ctrlKey && !e.metaKey && !e.altKey) {
+        e.preventDefault();
+        select("search");
+        window.setTimeout(() => document.querySelector<HTMLInputElement>('.search input, input[type="search"]')?.focus(), 40);
+      } else if (e.altKey && e.key === "ArrowLeft") {
+        e.preventDefault();
+        goBack();
+      }
+    };
+    window.addEventListener("mouseup", onMouseUp);
+    window.addEventListener("keydown", onKeyDown);
+    return () => {
+      window.removeEventListener("mouseup", onMouseUp);
+      window.removeEventListener("keydown", onKeyDown);
+    };
+  }, [goBack, player.session?.view, select]);
 
   // Home and Search hand over the catalog item as the addon sent it; its type is checked here,
   // so a malformed item gives a clear message instead of a failed command.
@@ -211,14 +259,27 @@ export function App() {
           {boot && boot.addonsFailed > 0 && (
             <div className="banner">{t("{failed} de {total} addon(s) não responderam; os demais estão disponíveis.", { failed: boot.addonsFailed, total: boot.addonsEnabled })}</div>
           )}
-          <div className="screen" hidden={details !== null || folder !== null || tab !== "home"}>
-            <Home key={dataKey} onOpen={open} onResume={resume} onOpenFolder={(collection, f) => setFolder({ collection, folder: f })} />
+          <div className="screen" hidden={details !== null || folder !== null || catalog !== null || tab !== "home"}>
+            <Home
+              key={dataKey}
+              onOpen={open}
+              onResume={resume}
+              onOpenEntry={openEntry}
+              onOpenFolder={(collection, f) => setFolder({ collection, folder: f })}
+              onSeeAll={(row) => setCatalog(row)}
+            />
           </div>
           {folder && tab === "home" && (
             <div className="screen" hidden={details !== null}>
               <Folder key={`${dataKey}/${folder.collection.id}/${folder.folder.id}`} collection={folder.collection} folder={folder.folder} onOpen={open} onBack={() => setFolder(null)} />
             </div>
           )}
+          {catalog && tab === "home" && (
+            <div className="screen" hidden={details !== null}>
+              <CatalogGrid key={`${dataKey}/${catalog.key}`} row={catalog} onOpen={open} onBack={() => setCatalog(null)} />
+            </div>
+          )}
+          {tab === "discover" && <div className="screen" hidden={details !== null}><Discover key={dataKey} onOpen={open} /></div>}
           {tab === "search" && <div className="screen" hidden={details !== null}><Search key={dataKey} onOpen={open} /></div>}
           {tab === "tv" && <div className="screen screen-fill"><LiveTv key={dataKey} /></div>}
           {tab === "library" && <div className="screen" hidden={details !== null}><Library key={profileEpoch} onOpen={open} onResume={resume} onOpenEntry={openEntry} /></div>}

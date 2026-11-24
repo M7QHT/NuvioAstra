@@ -154,6 +154,12 @@ export function PlayerControls({ snapshot: s, live, fullscreen, onToggleFullscre
             </button>
             <span className="time">
               <b>{formatTime(timePos)}</b> <span className="time-sep">/</span> {formatTime(duration)}
+              {duration > 0 && (
+                <span className="ends-at">
+                  {" · Ends "}
+                  {new Date(Date.now() + (Math.max(0, duration - timePos) / (s?.speed || 1)) * 1000).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+                </span>
+              )}
             </span>
           </>
         )}

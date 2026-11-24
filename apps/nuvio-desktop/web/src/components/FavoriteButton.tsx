@@ -3,6 +3,7 @@
 
 import { memo, useState } from "react";
 import { libraryItemFromPreview, toggleFavorite, useIsFavorite } from "../library";
+import { showToast } from "../toast";
 import type { LibraryItem, MetaPreview } from "../types";
 import { t } from "../i18n";
 
@@ -21,7 +22,10 @@ export const FavoriteButton = memo(function FavoriteButton({ item, variant = "ic
     e.preventDefault();
     setFailed(false);
     const input = "landscapePoster" in item ? libraryItemFromPreview(item) : item;
-    toggleFavorite(input).catch(() => setFailed(true));
+    toggleFavorite(input).then(
+      (saved) => showToast(saved ? `Added "${item.name}" to Library` : `Removed "${item.name}" from Library`),
+      () => setFailed(true),
+    );
   };
   return (
     <button

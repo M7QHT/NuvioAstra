@@ -8,6 +8,7 @@ import { StreamList } from "../components/StreamList";
 import { startDownload, viaTorbox, type TorboxStates } from "../sources";
 import { TorrentStart } from "../components/TorrentStart";
 import { clock, episodeCode, libraryItemFromDetails, playbackItem, remaining, useLibraryVersion } from "../library";
+import { showToast } from "../toast";
 import { usePlayer } from "../player/PlayerContext";
 import type { Details as DetailsData, HistoryEntry, MetaRef, MetaVideo, StreamEntry, TitleProgress } from "../types";
 import { addonLabel, t } from "../i18n";
@@ -145,6 +146,38 @@ export function Details({ item, onBack }: Props) {
       },
       !currentlyWatched,
     );
+    showToast(!currentlyWatched ? "Marked as watched" : "Marked as unwatched");
+  };
+
+  const [seasonBusy, setSeasonBusy] = useState(false);
+  const allSeasonWatched = episodes.length > 0 && episodes.every((v) => Boolean(entryFor(v)?.completed));
+  const toggleSeasonWatched = async () => {
+    if (!data || !episodes.length || seasonBusy) return;
+    setSeasonBusy(true);
+    const m = data.meta;
+    const mark = !allSeasonWatched;
+    try {
+      for (const v of episodes) {
+        const cur = Boolean(entryFor(v)?.completed);
+        if (cur === mark) continue;
+        await api.librarySetWatched(
+          {
+            id: m.id,
+            contentType: m.contentType,
+            name: m.name,
+            poster: m.poster,
+            releaseInfo: m.releaseInfo,
+            season: v.season,
+            episode: v.episode,
+            videoId: v.id,
+          },
+          mark,
+        );
+      }
+      showToast(mark ? `Marked Season ${season} as watched` : `Unmarked Season ${season}`);
+    } finally {
+      setSeasonBusy(false);
+    }
   };
 
   const play = async (stream: StreamEntry, prepared = false, torbox: TorboxStates = {}, allStreams?: StreamEntry[]) => {
@@ -296,8 +329,15 @@ export function Details({ item, onBack }: Props) {
                 </button>
               ))}
               <button
-                className={`chip ${blurUnwatched ? "active" : ""}`}
+                className={`chip ${allSeasonWatched ? "active" : ""}`}
                 style={{ marginInlineStart: "auto" }}
+                disabled={seasonBusy}
+                onClick={() => void toggleSeasonWatched()}
+              >
+                {seasonBusy ? "Updating…" : allSeasonWatched ? "✓ Season watched" : "Mark season watched"}
+              </button>
+              <button
+                className={`chip ${blurUnwatched ? "active" : ""}`}
                 title="Blur thumbnails of unwatched episodes"
                 onClick={() => setBlurUnwatched((b) => !b)}
               >

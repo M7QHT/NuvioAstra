@@ -13,13 +13,15 @@ import { CatalogRow } from "../components/CatalogRow";
 import { CollectionRow } from "../components/CollectionRow";
 import { ContinueWatchingRow } from "../components/ContinueWatching";
 import { HeroCarousel } from "../components/HeroCarousel";
-import type { CollectionView, FolderView, HistoryEntry, HomeView, MetaPreview } from "../types";
+import type { CollectionView, FolderView, HistoryEntry, HomeRow, HomeView, MetaPreview } from "../types";
 import { t } from "../i18n";
 
 interface Props {
   onOpen(item: MetaPreview): void;
   onResume(entry: HistoryEntry): void;
+  onOpenEntry?(entry: HistoryEntry): void;
   onOpenFolder(collection: CollectionView, folder: FolderView): void;
+  onSeeAll?(row: HomeRow): void;
 }
 
 const HERO_ITEM_LIMIT = 8;
@@ -42,7 +44,7 @@ function shuffle<T>(list: T[]): T[] {
   return out;
 }
 
-export function Home({ onOpen, onResume, onOpenFolder }: Props) {
+export function Home({ onOpen, onResume, onOpenEntry, onOpenFolder, onSeeAll }: Props) {
   const [view, setView] = useState<HomeView | null>(viewCache);
   const [error, setError] = useState<string | null>(null);
   const [hero, setHero] = useState<MetaPreview[] | null>(heroCache);
@@ -117,12 +119,12 @@ export function Home({ onOpen, onResume, onOpenFolder }: Props) {
   return (
     <div className="home">
       {view?.heroEnabled && view.heroSources.length > 0 && (hero ? <HeroCarousel items={hero} onOpen={onOpen} /> : <div className="hero hero-placeholder" aria-hidden />)}
-      <ContinueWatchingRow onResume={onResume} />
+      <ContinueWatchingRow onResume={onResume} onOpenDetails={onOpenEntry} />
       {rows.map((row) =>
         row.collection ? (
           <CollectionRow key={`${generation}:${row.key}`} title={row.title} collection={row.collection} onOpenFolder={onOpenFolder} />
         ) : (
-          <CatalogRow key={`${generation}:${row.key}`} row={row} onOpen={onOpen} />
+          <CatalogRow key={`${generation}:${row.key}`} row={row} onOpen={onOpen} onSeeAll={onSeeAll} />
         ),
       )}
     </div>

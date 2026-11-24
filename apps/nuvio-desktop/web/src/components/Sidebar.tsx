@@ -8,10 +8,18 @@ import { Avatar } from "./ProfileMenu";
 import { HomeLine as HomeIcon, LibraryLine as LibraryIcon, SearchLine as SearchIcon, SettingsLine as SettingsIcon, TvLine as TvIcon } from "./SidebarIcons";
 import { t } from "../i18n";
 
-export type Tab = "home" | "tv" | "search" | "library" | "settings";
+export type Tab = "home" | "discover" | "tv" | "search" | "library" | "settings";
+
+const DiscoverIcon = () => (
+  <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+    <circle cx="12" cy="12" r="9" />
+    <polygon points="15.5 8.5 13.5 13.5 8.5 15.5 10.5 10.5 15.5 8.5" />
+  </svg>
+);
 
 const ITEMS: { tab: Tab; label: string; icon: ReactNode }[] = [
   { tab: "home", label: "Início", icon: <HomeIcon /> },
+  { tab: "discover", label: "Discover", icon: <DiscoverIcon /> },
   { tab: "tv", label: "TV", icon: <TvIcon /> },
   { tab: "search", label: "Buscar", icon: <SearchIcon /> },
   { tab: "library", label: "Biblioteca", icon: <LibraryIcon /> },
