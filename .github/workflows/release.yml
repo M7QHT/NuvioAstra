@@ -140,11 +140,32 @@ jobs:
           NUVIO_SUPABASE_FALLBACK_URL: ${{ vars.NUVIO_SUPABASE_FALLBACK_URL }}
         run: cargo build --release -p nuvio-desktop
 
+      # The runner image may not have NSIS (newer windows-latest images dropped it): use the installed
+      # one, else Chocolatey, else the official zip. The step fails here if makensis.exe is still missing.
       - name: NSIS
         run: |
-          $nsis = @("${env:ProgramFiles(x86)}\NSIS", "$env:ProgramFiles\NSIS") | Where-Object { Test-Path (Join-Path $_ "makensis.exe") } | Select-Object -First 1
-          if (-not $nsis) { choco install nsis -y --no-progress; $nsis = "${env:ProgramFiles(x86)}\NSIS" }
+          function Find-Nsis {
+            $dirs = @("${env:ProgramFiles(x86)}\NSIS", "$env:ProgramFiles\NSIS", "$env:ChocolateyInstall\lib\nsis\tools", "$env:RUNNER_TEMP\nsis-3.10")
+            $cmd = Get-Command makensis.exe -ErrorAction SilentlyContinue
+            if ($cmd) { $dirs = @((Split-Path $cmd.Source)) + $dirs }
+            $dirs | Where-Object { $_ -and (Test-Path (Join-Path $_ "makensis.exe")) } | Select-Object -First 1
+          }
+          $nsis = Find-Nsis
+          if (-not $nsis) {
+            choco install nsis -y --no-progress
+            Write-Host "choco exit code: $LASTEXITCODE"
+            $nsis = Find-Nsis
+          }
+          if (-not $nsis) {
+            $zip = Join-Path $env:RUNNER_TEMP "nsis-3.10.zip"
+            Invoke-WebRequest -Uri "https://downloads.sourceforge.net/project/nsis/NSIS%203/3.10/nsis-3.10.zip" -OutFile $zip -UserAgent "Wget" -MaximumRedirection 10
+            Expand-Archive $zip -DestinationPath $env:RUNNER_TEMP -Force
+            $nsis = Find-Nsis
+          }
+          if (-not $nsis) { throw "makensis.exe not found after installing NSIS" }
+          & (Join-Path $nsis "makensis.exe") /VERSION
           "NSIS_HOME=$nsis" >> $env:GITHUB_ENV
+          $global:LASTEXITCODE = 0
 
       - name: Package (installer)
         run: ./packaging/windows/build-release.ps1 -SkipBuild -LibMpv deps/libmpv-2.dll -Engine deps/nuvio_engine.dll
