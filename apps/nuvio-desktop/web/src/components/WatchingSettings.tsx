@@ -59,6 +59,14 @@ export function WatchingSettings({ value: p, onChange }: { value: PlayerSettings
             />
           </Row>
         ))}
+
+      <h3 className="settings-subhead">Details & sources</h3>
+      <Row title="Blur unwatched episodes" description="Blurs episode thumbnails on the Details screen until an episode is marked as watched to prevent spoilers.">
+        <Toggle label="Blur unwatched episodes" checked={p.blurUnwatchedEpisodes} onChange={(v) => onChange((x) => ({ ...x, blurUnwatchedEpisodes: v }))} />
+      </Row>
+      <Row title="Auto-fallback on source failure" description="If a chosen stream fails to open, automatically tries the next playable direct source in the list.">
+        <Toggle label="Auto-fallback on source failure" checked={p.autoFallbackSource} onChange={(v) => onChange((x) => ({ ...x, autoFallbackSource: v }))} />
+      </Row>
     </>
   );
 }

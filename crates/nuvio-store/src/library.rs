@@ -318,6 +318,7 @@ pub struct WatchedItem {
     pub episode: Option<i32>,
     #[serde(default)]
     pub video_id: Option<String>,
+    #[serde(default)]
     pub marked_at_epoch_ms: i64,
 }
 
@@ -652,6 +653,28 @@ impl AppStore {
             self.note(profile, Change::HistoryRemoved { progress: removed_progress.then_some(key), watched: removed })?;
         }
         Ok(removed_progress || removed_watched)
+    }
+
+    /// Manually marks or unmarks a movie or episode as watched.
+    pub fn set_watched(&self, profile: i64, mut item: WatchedItem, watched: bool) -> Result<bool, StoreError> {
+        let key = progress_key(&item.id, item.season, item.episode);
+        if !watched {
+            self.remove_history(profile, &key)?;
+            return Ok(false);
+        }
+        let _guard = LOCK.lock().unwrap_or_else(|e| e.into_inner());
+        item.marked_at_epoch_ms = now_ms();
+        let mut items = self.watched(profile)?;
+        items.push(item.clone());
+        self.write(&watched_doc(profile), &WatchedDoc { items: dedupe_watched(items) })?;
+        let mut entries = self.progress(profile)?;
+        let before = entries.len();
+        entries.retain(|e| e.key() != key);
+        if entries.len() != before {
+            self.write(&progress_doc(profile), &ProgressDoc { entries })?;
+        }
+        self.note(profile, Change::Progress { key: &key, completed: Some(item) })?;
+        Ok(true)
     }
 
     pub(crate) fn has_library_docs(&self, profile: i64) -> [bool; 3] {

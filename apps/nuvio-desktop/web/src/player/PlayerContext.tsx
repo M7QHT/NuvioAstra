@@ -5,11 +5,17 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { api, errorText } from "../api";
 import { listen } from "../tauri";
-import type { DownloadRequest, PlayerInfo, PlayerSnapshot } from "../types";
+import type { DownloadRequest, MetaDetails, MetaVideo, PlayerInfo, PlayerSnapshot } from "../types";
 import type { EpisodeContext } from "./episodes";
 
 /** `embedded`: video inside a screen area (Live TV preview). `full`: the whole window. */
 export type PlayerView = "embedded" | "full";
+
+export interface PlayerSourceContext {
+  meta: MetaDetails;
+  video: MetaVideo | null;
+  streamKey?: string;
+}
 
 export interface PlayerSession {
   title: string;
@@ -21,6 +27,8 @@ export interface PlayerSession {
   returnTo: PlayerView | null;
   /** An episode of a series: what "next episode" needs. */
   episode?: EpisodeContext;
+  /** Current movie or episode context for in-player Sources and Episodes panels. */
+  source?: PlayerSourceContext;
   /** Played by the P2P engine. */
   torrent?: boolean;
   /** What "Baixar" in the player downloads. */

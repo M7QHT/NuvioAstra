@@ -157,6 +157,10 @@ pub struct PlayerSettings {
     /// Interface language (`selected_app_language` of the original: pt-BR, en or ar). None follows
     /// the computer. Kept here so the account sync carries it with the other preferences.
     pub app_language: Option<String>,
+    /// Astra only: blur thumbnails of unwatched episodes in Details to avoid spoilers.
+    pub blur_unwatched_episodes: bool,
+    /// Astra only: automatically try the next playable source if playback fails to open.
+    pub auto_fallback_source: bool,
 }
 
 /// Interface languages Astra has (codes of the original's `AppLanguage`).
@@ -186,6 +190,8 @@ impl Default for PlayerSettings {
             watched_percent: crate::library::COMPLETION_PERCENT,
             cards: CardStyle::default(),
             app_language: None,
+            blur_unwatched_episodes: false,
+            auto_fallback_source: true,
         }
     }
 }
@@ -439,6 +445,8 @@ impl LegacyStore {
             watched_percent: d.watched_percent,
             cards: self.card_style(profile_index)?,
             app_language: None,
+            blur_unwatched_episodes: d.blur_unwatched_episodes,
+            auto_fallback_source: d.auto_fallback_source,
         }
         .sanitized())
     }

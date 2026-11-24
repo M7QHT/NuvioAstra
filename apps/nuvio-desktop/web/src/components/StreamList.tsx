@@ -2,7 +2,7 @@
 // streams play in the app's player; with TorBox, cached torrents are marked "TB Instant" and the
 // addons' own TorBox sources play too. Right click: play or download. Badges come from the texts.
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { api, errorText } from "../api";
 import { badgesOf, canDownload, type TorboxStates } from "../sources";
@@ -19,11 +19,12 @@ const PENDING: Record<Exclude<StreamKind, "direct" | "torrent">, string> = {
 interface Props {
   contentType: string;
   id: string;
-  onPlay(stream: StreamEntry, torbox: TorboxStates): void;
+  activeKey?: string;
+  onPlay(stream: StreamEntry, torbox: TorboxStates, allStreams?: StreamEntry[]): void;
   onDownload?(stream: StreamEntry, torbox: TorboxStates): void;
 }
 
-export function StreamList({ contentType, id, onPlay, onDownload }: Props) {
+export function StreamList({ contentType, id, activeKey, onPlay, onDownload }: Props) {
   const [groups, setGroups] = useState<StreamGroup[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [torbox, setTorbox] = useState<TorboxStates>({});
@@ -66,6 +67,8 @@ export function StreamList({ contentType, id, onPlay, onDownload }: Props) {
     };
   }, [menu]);
 
+  const allStreams = useMemo(() => (groups ? groups.flatMap((g) => g.streams) : []), [groups]);
+
   if (error) return <div className="row-error">{t("Falha ao buscar fontes: {error}", { error })}</div>;
   if (!groups) return <div className="muted">{t("Buscando fontes nos addons…")}</div>;
   if (!groups.length) return <div className="muted">{t("Nenhum addon instalado fornece fontes para este título.")}</div>;
@@ -83,16 +86,17 @@ export function StreamList({ contentType, id, onPlay, onDownload }: Props) {
           {group.streams.map((s) => {
             const ok = playable(s);
             const instant = torbox[s.key] === "cached";
+            const isCurrent = Boolean(activeKey && activeKey === s.key);
             const badges = badgesOf(s);
             return (
               <button
                 key={s.key}
-                className="stream"
+                className={`stream ${isCurrent ? "stream-active" : ""}`}
                 data-kind={s.kind}
                 data-key={s.key}
                 data-instant={instant || undefined}
                 disabled={!ok}
-                onClick={() => ok && onPlay(s, torbox)}
+                onClick={() => ok && onPlay(s, torbox, allStreams)}
                 onContextMenu={(e) => {
                   e.preventDefault();
                   if (ok) setMenu({ stream: s, x: e.clientX, y: e.clientY });
@@ -100,6 +104,7 @@ export function StreamList({ contentType, id, onPlay, onDownload }: Props) {
               >
                 <span className="stream-name">
                   {s.name || t("Fonte")}
+                  {isCurrent && <span className="stream-badge stream-badge-playing">Playing</span>}
                   {instant && <span className="stream-tag instant" title={t("Já está no cache do TorBox: abre na hora")}>TB Instant</span>}
                   {s.kind === "torrent" && !instant && <span className="stream-tag">P2P</span>}
                 </span>

@@ -42,6 +42,9 @@ const Icons = {
   exitFullscreen: svg(<><path d="M9 4v5H4" /><path d="M15 4v5h5" /><path d="M9 20v-5H4" /><path d="M15 20v-5h5" /></>),
   download: svg(<><path d="M12 4v11" /><path d="M7.5 10.5L12 15l4.5-4.5" /><path d="M5 19.5h14" /></>),
   next: svg(<><path d="M5.5 5v14l10-7z" /><path d="M19 5v14" /></>),
+  sources: svg(<><path d="M4 7h16" /><path d="M4 12h16" /><path d="M4 17h10" /><circle cx="18" cy="17" r="2" /></>),
+  episodes: svg(<><rect x="3" y="5" width="18" height="4" rx="1" /><rect x="3" y="11" width="18" height="4" rx="1" /><rect x="3" y="17" width="12" height="3" rx="1" /></>),
+  chapters: svg(<><path d="M5 6h14" /><path d="M5 12h14" /><path d="M5 18h14" /><circle cx="2.5" cy="6" r="1" fill="currentColor" /><circle cx="2.5" cy="12" r="1" fill="currentColor" /><circle cx="2.5" cy="18" r="1" fill="currentColor" /></>),
   close: svg(<><path d="M6 6l12 12" /><path d="M18 6L6 18" /></>),
 };
 
@@ -54,6 +57,10 @@ interface Props {
   /** Shown as an ✕ only when given (embedded preview); the full player closes with ← / Esc. */
   onClose?(): void;
   onPictureInPicture?(): void;
+  /** Full player: open in-player Sources, Episodes, or Chapters drawers without leaving playback. */
+  onOpenSources?(): void;
+  onOpenEpisodes?(): void;
+  onOpenChapters?(): void;
   /** Full player: the subtitle menu, instead of the plain list of the file's tracks. */
   subtitles?: ReactNode;
   /** A series with a following episode: opens its sources. */
@@ -62,7 +69,7 @@ interface Props {
   onDownload?(): void;
 }
 
-export function PlayerControls({ snapshot: s, live, fullscreen, onToggleFullscreen, onClose, onPictureInPicture, subtitles, next, onDownload }: Props) {
+export function PlayerControls({ snapshot: s, live, fullscreen, onToggleFullscreen, onClose, onPictureInPicture, onOpenSources, onOpenEpisodes, onOpenChapters, subtitles, next, onDownload }: Props) {
   const [seekDraft, setSeekDraft] = useState<number | null>(null);
   const [mode, setMode] = useState<ResizeMode>("fit");
   const duration = s?.duration ?? 0;
@@ -156,6 +163,21 @@ export function PlayerControls({ snapshot: s, live, fullscreen, onToggleFullscre
         {next && (
           <button className="pc-btn pc-next" aria-label={t("Próximo episódio")} title={next.label} disabled={next.disabled} data-testid="next-episode" onClick={next.open}>
             {Icons.next}<span>{t("Próximo episódio")}</span>
+          </button>
+        )}
+        {onOpenSources && (
+          <button className="pc-btn pc-next" aria-label="Switch source" title="Switch source (S)" data-testid="open-sources" onClick={onOpenSources}>
+            {Icons.sources}<span>Sources</span>
+          </button>
+        )}
+        {onOpenEpisodes && (
+          <button className="pc-btn pc-next" aria-label="Episodes" title="Episodes (E)" data-testid="open-episodes" onClick={onOpenEpisodes}>
+            {Icons.episodes}<span>Episodes</span>
+          </button>
+        )}
+        {onOpenChapters && (
+          <button className="pc-btn pc-next" aria-label="Chapters" title="Chapters" data-testid="open-chapters" onClick={onOpenChapters}>
+            {Icons.chapters}<span>Chapters</span>
           </button>
         )}
         <span className="spacer" />

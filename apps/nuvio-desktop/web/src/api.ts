@@ -17,6 +17,7 @@ import type {
   AddonPreview, AddonsView, Bootstrap, CatalogPage, ChannelList, CssRect, Details, HistoryEntry, HistoryPage, HomeView, LibraryItem,
   AccountStatus, AvatarItem, PinResult, SyncPreview, PlaybackItem, PlayerCommand, ProfilesView, PlayerInfo, PlayerSnapshot, ProfileSettings, SearchSection, SettingsView, StreamGroup,
   TitleProgress,
+  WatchedItemInput,
 } from "./types";
 
 // Session caches: the same catalog page or title is asked to the addons once, so scrolling back,
@@ -167,6 +168,7 @@ export const api = {
   libraryNextUp: () => invoke<HistoryEntry[]>("library_next_up"),
   libraryHistory: (offset: number, limit: number) => invoke<HistoryPage>("library_history", { offset, limit }),
   libraryRemoveHistory: (key: string) => invoke<boolean>("library_remove_history", { key }),
+  librarySetWatched: (item: WatchedItemInput, watched: boolean) => invoke<boolean>("library_set_watched", { item: { markedAtEpochMs: 0, ...item }, watched }),
   libraryTitleProgress: (id: string) => invoke<TitleProgress>("library_title_progress", { id }),
 
   /** `progress`: the movie/episode, so Rust saves its position (absent for live TV). */

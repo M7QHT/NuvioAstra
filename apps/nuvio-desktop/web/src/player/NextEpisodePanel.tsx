@@ -79,6 +79,7 @@ export function NextEpisodePanel({ context, next, finished, onClose }: Props) {
       view: "full",
       returnTo: null,
       episode: { meta, video: next },
+      source: { meta, video: next, streamKey: stream.key },
       torrent: stream.kind === "torrent" && !direct,
       download: downloadRequest(stream),
     });

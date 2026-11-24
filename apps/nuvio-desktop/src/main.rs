@@ -571,6 +571,7 @@ fn main() {
             api::library_continue_watching,
             api::library_history,
             api::library_remove_history,
+            api::library_set_watched,
             api::library_title_progress,
             manage::addons_list,
             manage::addon_preview,

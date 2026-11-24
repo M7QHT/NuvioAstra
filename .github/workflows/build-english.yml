@@ -1,0 +1,73 @@
+name: Build English (Windows x64)
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  build:
+    runs-on: windows-latest
+    timeout-minutes: 90
+    defaults:
+      run:
+        shell: pwsh
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: apps/nuvio-desktop/web/package-lock.json
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: x86_64-pc-windows-msvc
+
+      - uses: Swatinem/rust-cache@v2
+
+      - name: Native libraries (pinned SHA-256)
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          $deps = Get-Content packaging/windows/deps.json -Raw | ConvertFrom-Json
+          New-Item -ItemType Directory -Force deps | Out-Null
+          $zip = "deps/nuvio-engine.zip"
+          Invoke-WebRequest $deps.nuvioEngine.url -OutFile $zip
+          if ((Get-FileHash $zip -Algorithm SHA256).Hash -ne $deps.nuvioEngine.zipSha256) { throw "nuvio-engine zip checksum mismatch" }
+          Expand-Archive $zip -DestinationPath deps/nuvio-engine -Force
+          Copy-Item (Join-Path deps/nuvio-engine $deps.nuvioEngine.dllPath) deps/nuvio_engine.dll
+          if ((Get-FileHash deps/nuvio_engine.dll -Algorithm SHA256).Hash -ne $deps.nuvioEngine.dllSha256) { throw "nuvio_engine.dll checksum mismatch" }
+
+          $mpvUrl = "https://github.com/ScottGzin/NuvioAstra/releases/download/$($deps.libmpv.releaseTag)/$($deps.libmpv.asset)"
+          Invoke-WebRequest $mpvUrl -OutFile deps/libmpv-2.dll
+          if ((Get-FileHash deps/libmpv-2.dll -Algorithm SHA256).Hash -ne $deps.libmpv.sha256) { throw "libmpv-2.dll checksum mismatch" }
+
+      - name: Frontend
+        working-directory: apps/nuvio-desktop/web
+        run: |
+          npm ci
+          npm run build
+
+      - name: Build (release)
+        run: cargo build --release -p nuvio-desktop
+
+      - name: NSIS
+        run: |
+          $nsis = @("${env:ProgramFiles(x86)}\NSIS", "$env:ProgramFiles\NSIS") | Where-Object { Test-Path (Join-Path $_ "makensis.exe") } | Select-Object -First 1
+          if (-not $nsis) { choco install nsis -y --no-progress; $nsis = "${env:ProgramFiles(x86)}\NSIS" }
+          "NSIS_HOME=$nsis" >> $env:GITHUB_ENV
+
+      - name: Package (installer)
+        run: ./packaging/windows/build-release.ps1 -SkipBuild -LibMpv deps/libmpv-2.dll -Engine deps/nuvio_engine.dll
+
+      - name: Upload Windows Installer
+        uses: actions/upload-artifact@v4
+        with:
+          name: Nuvio-Astra-English-Windows-x64
+          path: dist/Nuvio-Astra-*-x64-setup.exe
+          if-no-files-found: error

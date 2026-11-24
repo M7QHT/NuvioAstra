@@ -95,6 +95,8 @@ export interface PlayerSettings {
   cards: CardStyle;
   /** Interface language saved with the account (pt-BR, en, ar); null follows the computer. */
   appLanguage?: string | null;
+  blurUnwatchedEpisodes: boolean;
+  autoFallbackSource: boolean;
 }
 export interface HomeCatalogPreference { key: string; customTitle: string; enabled: boolean; heroSourceEnabled: boolean; order: number }
 export interface HomeCatalogSettings { heroEnabled: boolean; showCatalogType: boolean; hideUnreleasedContent: boolean; items: HomeCatalogPreference[]; heroCatalogs: string[] | null }
@@ -225,6 +227,10 @@ export interface LibraryItem {
   id: string; contentType: string; name: string; poster: string | null; banner: string | null; logo: string | null;
   description: string | null; releaseInfo: string | null; imdbRating: string | null; genres: string[];
   posterShape: PosterShape; savedAtEpochMs: number;
+}
+export interface WatchedItemInput {
+  id: string; contentType: string; name: string; poster: string | null; releaseInfo: string | null;
+  season: number | null; episode: number | null; videoId: string | null; markedAtEpochMs?: number;
 }
 /** A played movie/episode (progress or watched mark). `key` = progress key (`<metaId>` or `<metaId>_s<S>e<E>`). */
 export interface HistoryEntry {

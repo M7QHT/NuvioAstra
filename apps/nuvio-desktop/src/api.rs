@@ -415,6 +415,23 @@ pub async fn library_remove_history<R: tauri::Runtime>(app: tauri::AppHandle<R>,
     Ok(removed)
 }
 
+/// Manually marks or unmarks a movie or episode as watched.
+#[tauri::command]
+pub async fn library_set_watched<R: tauri::Runtime>(
+    app: tauri::AppHandle<R>,
+    state: State<'_, AppState>,
+    item: library::WatchedItem,
+    watched: bool,
+) -> Result<bool, String> {
+    state.ensure_unlocked()?;
+    let profile = state.active_profile();
+    let now_watched = state.app_store.set_watched(profile, item, watched).map_err(|e| e.to_string())?;
+    use tauri::Emitter;
+    let _ = app.emit("library-changed", ());
+    state.request_sync();
+    Ok(now_watched)
+}
+
 #[derive(Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct TitleProgress {
