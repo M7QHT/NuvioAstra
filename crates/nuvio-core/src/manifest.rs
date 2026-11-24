@@ -82,6 +82,23 @@ impl AddonCatalog {
         self.extra.iter().any(|e| e.name == "search")
             && !self.extra.iter().any(|e| e.is_required && e.name != "search")
     }
+
+    /// Discover catalogs (`supportsDiscover` of the original): browsable without a search, and every
+    /// required extra can be filled (a required genre needs its options; skip is optional paging).
+    pub fn supports_discover(&self) -> bool {
+        if self.extra.iter().any(|e| e.name == "search" && e.is_required) {
+            return false;
+        }
+        !self.extra.iter().any(|e| match e.name.as_str() {
+            "genre" => e.is_required && e.options.is_empty(),
+            "skip" | "search" => false,
+            _ => e.is_required,
+        })
+    }
+
+    pub fn genre_extra(&self) -> Option<&AddonExtraProperty> {
+        self.extra.iter().find(|e| e.name == "genre")
+    }
 }
 
 pub fn parse_manifest(manifest_url: &str, payload: &str) -> Result<AddonManifest, CoreError> {

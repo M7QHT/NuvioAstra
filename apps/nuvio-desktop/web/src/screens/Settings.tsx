@@ -28,22 +28,44 @@ import { LANGUAGES_UI, addonLabel, localizeCatalogTitle, locale, t, useLang, typ
 import { chooseAppLanguage } from "../appLanguage";
 import { message } from "../rustErrors";
 
-type Section = "account" | "home" | "addons" | "playback" | "p2p" | "torbox" | "downloads" | "audio" | "subtitles" | "data" | "updates" | "pending";
+type Section = "account" | "home" | "addons" | "playback" | "watching" | "p2p" | "torbox" | "downloads" | "audio" | "subtitles" | "data" | "updates" | "pending";
 
-const SECTIONS: { id: Section; label: string; icon: ReactNode }[] = [
-  { id: "account", label: "Conta", icon: <AccountIcon /> },
-  { id: "home", label: "Início", icon: <HomeIcon /> },
-  { id: "addons", label: "Addons", icon: <AddonsIcon /> },
-  { id: "playback", label: "Reprodução", icon: <PlaybackIcon /> },
-  { id: "p2p", label: "Torrent / P2P", icon: <P2pIcon /> },
-  { id: "torbox", label: "TorBox", icon: <TorboxIcon /> },
-  { id: "downloads", label: "Downloads", icon: <DownloadsIcon /> },
-  { id: "audio", label: "Áudio", icon: <AudioIcon /> },
-  { id: "subtitles", label: "Legendas", icon: <SubtitlesIcon /> },
-  { id: "data", label: "Perfil e dados", icon: <ProfileDataIcon /> },
-  { id: "updates", label: "Atualizações", icon: <UpdatesIcon /> },
-  { id: "pending", label: "Ainda não disponível", icon: <PendingIcon /> },
+// The menu: a few groups, each opening into its pages (only one group open at a time).
+const GROUPS: { id: string; label: string; icon: ReactNode; sections: { id: Section; label: string; icon: ReactNode }[] }[] = [
+  { id: "profile", label: "Conta e perfil", icon: <AccountIcon />, sections: [
+    { id: "account", label: "Conta", icon: <AccountIcon /> },
+    { id: "data", label: "Perfil e dados", icon: <ProfileDataIcon /> },
+  ] },
+  { id: "content", label: "Conteúdo", icon: <HomeIcon />, sections: [
+    { id: "home", label: "Início", icon: <HomeIcon /> },
+    { id: "addons", label: "Addons", icon: <AddonsIcon /> },
+  ] },
+  { id: "player", label: "Player", icon: <PlaybackIcon />, sections: [
+    { id: "playback", label: "Imagem e vídeo", icon: <PlaybackIcon /> },
+    { id: "watching", label: "Episódios e pular", icon: <PlaybackIcon /> },
+    { id: "audio", label: "Áudio", icon: <AudioIcon /> },
+    { id: "subtitles", label: "Legendas", icon: <SubtitlesIcon /> },
+  ] },
+  { id: "sources", label: "Fontes e downloads", icon: <DownloadsIcon />, sections: [
+    { id: "p2p", label: "Torrent / P2P", icon: <P2pIcon /> },
+    { id: "torbox", label: "TorBox", icon: <TorboxIcon /> },
+    { id: "downloads", label: "Downloads", icon: <DownloadsIcon /> },
+  ] },
+  { id: "app", label: "Sobre o app", icon: <UpdatesIcon />, sections: [
+    { id: "updates", label: "Atualizações", icon: <UpdatesIcon /> },
+    { id: "pending", label: "Ainda não disponível", icon: <PendingIcon /> },
+  ] },
 ];
+const SECTIONS = GROUPS.flatMap((g) => g.sections);
+const groupOf = (s: Section) => GROUPS.find((g) => g.sections.some((x) => x.id === s))!.id;
+
+function Chevron({ open }: { open: boolean }) {
+  return (
+    <svg className={`nav-chevron ${open ? "open" : ""}`} viewBox="0 0 24 24" width="14" height="14" aria-hidden fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M9 6l6 6-6 6" />
+    </svg>
+  );
+}
 
 type Status = { kind: "idle" } | { kind: "saving" } | { kind: "saved"; note?: string } | { kind: "error"; message: string };
 
@@ -69,6 +91,17 @@ export function Settings() {
   const [draft, setDraft] = useState<ProfileSettings | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [section, setSection] = useState<Section>("home");
+  const [openGroup, setOpenGroup] = useState<string | null>(() => groupOf("home"));
+  const choose = (s: Section) => {
+    setSection(s);
+    setOpenGroup(groupOf(s));
+  };
+  const toggleGroup = (id: string) => {
+    if (openGroup === id) return setOpenGroup(null);
+    setOpenGroup(id);
+    const group = GROUPS.find((g) => g.id === id)!;
+    if (!group.sections.some((s) => s.id === section)) setSection(group.sections[0].id);
+  };
   const [status, setStatus] = useState<Status>({ kind: "idle" });
   const timer = useRef<number>(0);
   const pending = useRef<{ next: ProfileSettings; note?: string } | null>(null);
@@ -175,7 +208,8 @@ export function Settings() {
     update((s) => {
       switch (what) {
         case "home": return { ...s, home: { ...d.home } };
-        case "playback": return { ...s, player: { ...s.player, resizeMode: d.player.resizeMode, decoderPriority: d.player.decoderPriority, nvidiaRtxSuperResolution: d.player.nvidiaRtxSuperResolution, nvidiaRtxHdr: d.player.nvidiaRtxHdr, motionSmoothing: d.player.motionSmoothing, videoEnhancement: d.player.videoEnhancement, picture: { ...d.player.picture }, skipSegmentsEnabled: d.player.skipSegmentsEnabled, autoSkipSegments: [...d.player.autoSkipSegments], nextEpisodeThresholdMode: d.player.nextEpisodeThresholdMode, nextEpisodeThresholdPercent: d.player.nextEpisodeThresholdPercent, nextEpisodeThresholdMinutes: d.player.nextEpisodeThresholdMinutes, watchedPercent: d.player.watchedPercent } };
+        case "playback": return { ...s, player: { ...s.player, resizeMode: d.player.resizeMode, decoderPriority: d.player.decoderPriority, nvidiaRtxSuperResolution: d.player.nvidiaRtxSuperResolution, nvidiaRtxHdr: d.player.nvidiaRtxHdr, motionSmoothing: d.player.motionSmoothing, videoEnhancement: d.player.videoEnhancement, picture: { ...d.player.picture } } };
+        case "watching": return { ...s, player: { ...s.player, skipSegmentsEnabled: d.player.skipSegmentsEnabled, autoSkipSegments: [...d.player.autoSkipSegments], nextEpisodeThresholdMode: d.player.nextEpisodeThresholdMode, nextEpisodeThresholdPercent: d.player.nextEpisodeThresholdPercent, nextEpisodeThresholdMinutes: d.player.nextEpisodeThresholdMinutes, watchedPercent: d.player.watchedPercent } };
         case "audio": return { ...s, player: { ...s.player, preferredAudioLanguage: d.player.preferredAudioLanguage, secondaryPreferredAudioLanguage: d.player.secondaryPreferredAudioLanguage } };
         case "subtitles": return { ...s, player: { ...s.player, preferredSubtitleLanguage: d.player.preferredSubtitleLanguage, secondaryPreferredSubtitleLanguage: d.player.secondaryPreferredSubtitleLanguage, subtitle: { ...d.player.subtitle } } };
         default: return s;
@@ -198,12 +232,26 @@ export function Settings() {
             <div className="muted small">{t("Configurações deste perfil")}</div>
           </div>
         </div>
-        {SECTIONS.map((s) => (
-          <button key={s.id} className={`nav-item ${section === s.id ? "active" : ""}`} data-section={s.id} onClick={() => setSection(s.id)}>
-            <span className="nav-icon" aria-hidden>{s.icon}</span>
-            <span>{t(s.label)}</span>
-          </button>
-        ))}
+        {GROUPS.map((g) => {
+          const open = openGroup === g.id;
+          const current = g.sections.some((s) => s.id === section);
+          return (
+            <div key={g.id} className={`nav-group ${open ? "open" : ""}`}>
+              <button className={`nav-item nav-group-head ${current ? "current" : ""}`} data-group={g.id} aria-expanded={open} onClick={() => toggleGroup(g.id)}>
+                <span className="nav-icon" aria-hidden>{g.icon}</span>
+                <span className="nav-group-label">{t(g.label)}</span>
+                <Chevron open={open} />
+              </button>
+              <div className="nav-sub-list" hidden={!open}>
+                {g.sections.map((s) => (
+                  <button key={s.id} className={`nav-item nav-sub ${section === s.id ? "active" : ""}`} data-section={s.id} onClick={() => choose(s.id)}>
+                    <span>{t(s.label)}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          );
+        })}
       </nav>
 
       <div className="settings-body" key={section}>
@@ -214,7 +262,7 @@ export function Settings() {
             {status.kind === "saved" && `${t("✓ Salvo")}${status.note ? ` · ${status.note}` : ""}`}
             {status.kind === "error" && t("Não foi possível salvar: {error}", { error: message(status.message) })}
           </span>
-          {["home", "playback", "audio", "subtitles"].includes(section) && (
+          {["home", "playback", "watching", "audio", "subtitles"].includes(section) && (
             <button className="ghost" onClick={() => resetSection(section)}>{t("Restaurar padrões")}</button>
           )}
         </header>
@@ -264,6 +312,11 @@ export function Settings() {
             <Row title="NVIDIA RTX Video HDR" description={t("Converte SDR em HDR em telas HDR com placa RTX.")}>
               <Toggle label="NVIDIA RTX Video HDR" checked={p.nvidiaRtxHdr} onChange={(v) => player((x) => ({ ...x, nvidiaRtxHdr: v }))} />
             </Row>
+          </div>
+        )}
+
+        {section === "watching" && (
+          <div className="settings-group">
             <WatchingSettings value={p} onChange={player} />
           </div>
         )}
@@ -343,7 +396,7 @@ export function Settings() {
           <div className="settings-group">
             <p className="muted">{t("Recursos do Nuvio original que o Nuvio Astra ainda não tem. Eles aparecem nas Configurações quando forem adicionados — nenhuma opção fica visível sem funcionar.")}</p>
             <ul className="pending-list">
-              <li><b>{t("Início e catálogos")}</b> {t("— “Ver todos” de um catálogo, Descobrir na pesquisa, prévia ao passar o mouse e fonte de pôsteres personalizada.")}</li>
+              <li><b>{t("Início e catálogos")}</b> {t("— prévia ao passar o mouse e fonte de pôsteres personalizada.")}</li>
               <li><b>{t("Tela de detalhes")}</b> {t("— escolher as seções exibidas, títulos semelhantes, comentários e desfocar episódios não assistidos.")}</li>
               <li><b>{t("Assistidos")}</b> {t("— marcar ou desmarcar filmes e episódios como assistidos manualmente.")}</li>
               <li><b>{t("Continuar assistindo")}</b> {t("— estilo, ordenação, ação do clique, aviso de retomada ao abrir e opções para ocultar a fileira ou os episódios futuros.")}</li>

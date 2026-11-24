@@ -1,19 +1,20 @@
-// Side navigation: Início, TV, Buscar, Biblioteca; Configurações at the bottom above the profile.
+// Side navigation: Início, TV, Buscar, Descobrir, Biblioteca; Configurações at the bottom above the profile.
 // Line icons (`SidebarIcons.tsx`) in the app icon's palette; the logo at the top is the app's own,
 // centered on the same axis as the icons. The sync state is shown in Settings → Conta only.
 
 import type { ReactNode } from "react";
 import type { ProfileInfo } from "../types";
 import { Avatar } from "./ProfileMenu";
-import { HomeLine as HomeIcon, LibraryLine as LibraryIcon, SearchLine as SearchIcon, SettingsLine as SettingsIcon, TvLine as TvIcon } from "./SidebarIcons";
+import { DiscoverLine as DiscoverIcon, HomeLine as HomeIcon, LibraryLine as LibraryIcon, SearchLine as SearchIcon, SettingsLine as SettingsIcon, TvLine as TvIcon } from "./SidebarIcons";
 import { t } from "../i18n";
 
-export type Tab = "home" | "tv" | "search" | "library" | "settings";
+export type Tab = "home" | "tv" | "search" | "discover" | "library" | "settings";
 
 const ITEMS: { tab: Tab; label: string; icon: ReactNode }[] = [
   { tab: "home", label: "Início", icon: <HomeIcon /> },
   { tab: "tv", label: "TV", icon: <TvIcon /> },
   { tab: "search", label: "Buscar", icon: <SearchIcon /> },
+  { tab: "discover", label: "Descobrir", icon: <DiscoverIcon /> },
   { tab: "library", label: "Biblioteca", icon: <LibraryIcon /> },
 ];
 

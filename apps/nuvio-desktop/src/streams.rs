@@ -159,6 +159,18 @@ pub async fn search_in(
     content_type: &str,
     id: &str,
 ) -> Vec<StreamGroup> {
+    search_with(client, cache, manifests, content_type, id, false).await
+}
+
+/// `search_in`; with `fresh`, the addons are asked with `Cache-Control: no-cache` (reload).
+pub async fn search_with(
+    client: &AddonClient,
+    cache: &StreamCache,
+    manifests: &[AddonManifest],
+    content_type: &str,
+    id: &str,
+    fresh: bool,
+) -> Vec<StreamGroup> {
     let targets: Vec<&AddonManifest> = manifests.iter().filter(|m| m.supports_resource("stream", content_type, id)).collect();
     let requests = targets.iter().map(|manifest| {
         let client = client.clone();
@@ -170,7 +182,7 @@ pub async fn search_in(
         );
         async move {
             let result = client
-                .get_text(&url, false)
+                .get_text(&url, fresh)
                 .await
                 .map_err(|e| e.to_string())
                 .and_then(|payload| parse_streams(&payload, &name, &addon_id, logo.as_deref()).map_err(|e| e.to_string()));

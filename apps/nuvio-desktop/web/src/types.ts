@@ -101,7 +101,9 @@ export interface HomeCatalogSettings { heroEnabled: boolean; showCatalogType: bo
 export type P2pProfileName = "SOFT" | "BALANCED" | "FAST";
 export type P2pCacheName = "NONE" | "GB_2" | "GB_5" | "GB_10";
 export interface P2pSettings { enabled: boolean; enableUpload: boolean; hideTorrentStats: boolean; torrentProfile: P2pProfileName; cacheSize: P2pCacheName }
-export interface ProfileSettings { player: PlayerSettings; home: HomeCatalogSettings; p2p: P2pSettings; debrid: DebridSettings }
+export interface ProfileSettings { player: PlayerSettings; home: HomeCatalogSettings; p2p: P2pSettings; debrid: DebridSettings; search: SearchSettings }
+/** Addons left out of the search (`SearchAddon.key`), this computer only. */
+export interface SearchSettings { disabledAddons: string[] }
 /** Selected file of a torrent prepared by the P2P engine (the local URL stays in Rust). */
 export interface TorrentPrepared { fileIndex: number; fileSize: number; fileName: string; fileCount: number }
 export interface P2pStatus {
@@ -119,6 +121,13 @@ export interface SettingsView {
 }
 
 export interface SearchSection { key: string; title: string; addonName: string; items: MetaPreview[] }
+/** An addon with search catalogs ("Pesquisar em"); `catalogs`: its types ("Filmes", "Séries"). */
+export interface SearchAddon { key: string; name: string; logo: string | null; catalogs: string[]; enabled: boolean }
+/** A catalog of Descobrir; `key` is the catalog key of `catalogPage`. */
+export interface DiscoverCatalog {
+  key: string; addonName: string; contentType: string; typeLabel: string; name: string;
+  genres: string[]; genreRequired: boolean; supportsPagination: boolean;
+}
 
 export interface MetaPerson { name: string; role: string | null; photo: string | null }
 export interface MetaVideo {

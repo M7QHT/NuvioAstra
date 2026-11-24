@@ -257,7 +257,7 @@ export function LiveTv() {
       </div>
 
       <aside className="livetv-preview">
-        <PlayerSurface active={embedded} className="preview-hole">
+        <PlayerSurface active={embedded} playback={player.session} className="preview-hole">
           {!embedded && (
             <div className="hole-placeholder">
               {resolving ? t("Sintonizando…") : current ? "" : t("Escolha um canal para assistir")}

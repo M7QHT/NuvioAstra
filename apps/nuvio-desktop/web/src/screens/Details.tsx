@@ -30,6 +30,9 @@ export function Details({ item, onBack }: Props) {
   const [error, setError] = useState<string | null>(null);
   const [season, setSeason] = useState<number | null>(null);
   const [selected, setSelected] = useState<MetaVideo | "movie" | null>(null);
+  // "Recarregar" of the sources panel: counts clicks for the title/episode shown (0 for another one).
+  const [reload, setReload] = useState({ at: "", n: 0 });
+  const [reloading, setReloading] = useState(false);
   const [fromStart, setFromStart] = useState(false);
   /** Torrent source being started by the P2P engine (before the player opens). */
   const [torrent, setTorrent] = useState<StreamEntry | null>(null);
@@ -161,6 +164,7 @@ export function Details({ item, onBack }: Props) {
   }
   if (!data) return <div className="screen-message">{t("Carregando detalhes…")}</div>;
   const m = data.meta;
+  const shownId = selected === "movie" ? m.id : selected?.id ?? "";
   const movieEntry = entryFor("movie");
   const resumeVideo = progress?.resume ? m.videos.find((v) => v.season === progress.resume!.season && v.episode === progress.resume!.episode) : undefined;
 
@@ -291,7 +295,21 @@ export function Details({ item, onBack }: Props) {
                   {resumeAt !== null && <span data-testid="resume-note"> · {t("continua de {time}", { time: clock(resumeAt) })}</span>}
                 </div>
               </div>
-              <button className="icon-btn" aria-label={t("Fechar fontes")} onClick={() => setSelected(null)}>✕</button>
+              <div className="sources-actions">
+                <button
+                  className={`icon-btn sources-reload ${reloading ? "busy" : ""}`}
+                  aria-label={t("Recarregar fontes")}
+                  title={t("Recarregar fontes")}
+                  onClick={() => setReload((r) => ({ at: shownId, n: (r.at === shownId ? r.n : 0) + 1 }))}
+                  data-testid="sources-reload"
+                >
+                  <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M20 11a8 8 0 1 0-2.3 5.7" />
+                    <path d="M20 4v7h-7" />
+                  </svg>
+                </button>
+                <button className="icon-btn" aria-label={t("Fechar fontes")} onClick={() => setSelected(null)}>✕</button>
+              </div>
             </header>
             <div className="sources-body">
               {preparing && <div className="muted small torbox-preparing" role="status"><span className="spinner" aria-hidden /> {t("Abrindo pelo TorBox…")}</div>}
@@ -300,6 +318,8 @@ export function Details({ item, onBack }: Props) {
                 id={selected === "movie" ? m.id : selected.id}
                 onPlay={(stream, torbox) => void play(stream, false, torbox)}
                 onDownload={(stream) => void startDownload(downloadRequest(stream))}
+                reload={reload.at === shownId ? reload.n : 0}
+                onLoading={setReloading}
               />
             </div>
           </aside>
