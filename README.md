@@ -17,7 +17,7 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/M7QHT/NuvioAstra/actions/workflows/build-english.yml"><b>⬇️ Download Latest Windows Installer (Actions Artifact)</b></a>
+  <a href="https://github.com/M7QHT/NuvioAstra/releases/latest"><b>⬇️ Download Latest Windows Installer</b></a>
 </p>
 
 ---
@@ -91,9 +91,9 @@ This fork stays synced with **100% of upstream `ScottGzin/NuvioAstra`** (includi
 
 ## 💻 Installation
 
-1. Open the latest successful run under [**Actions → Build English (Windows x64)**](https://github.com/M7QHT/NuvioAstra/actions/workflows/build-english.yml).
-2. Download the **`Nuvio-Astra-English-Windows-x64`** artifact and extract it.
-3. Run `Nuvio-Astra-<version>-x64-setup.exe` (no administrator privileges required).
+1. Go to the [**Latest Release**](https://github.com/M7QHT/NuvioAstra/releases/latest) page.
+2. Download `Nuvio-Astra-<version>-x64-setup.exe` directly.
+3. Run the installer (no administrator privileges required). Checksums are provided in `SHA256SUMS.txt`.
 
 **Requirements:** Windows 10 or Windows 11 (64-bit) with Microsoft Edge WebView2 (pre-installed on Windows 11).
 

@@ -9,6 +9,9 @@ on:
 env:
   CARGO_TERM_COLOR: always
 
+permissions:
+  contents: write
+
 jobs:
   build:
     runs-on: windows-latest
@@ -72,3 +75,18 @@ jobs:
           name: Nuvio-Astra-English-Windows-x64
           path: dist/Nuvio-Astra-*-x64-setup.exe
           if-no-files-found: error
+
+      - name: Publish GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          $exe = Get-ChildItem dist/Nuvio-Astra-*-x64-setup.exe | Select-Object -First 1
+          if (-not $exe) { throw "Installer not found in dist/" }
+          $hash = (Get-FileHash $exe.FullName -Algorithm SHA256).Hash.ToLowerInvariant()
+          "$hash  $($exe.Name)" | Set-Content -Path dist/SHA256SUMS.txt -Encoding ascii
+          $ver = if ($exe.Name -match 'Nuvio-Astra-([0-9]+\.[0-9]+\.[0-9]+)-') { $Matches[1] } else { "0.2.0" }
+          $tag = "v$ver-build.$($env:GITHUB_RUN_NUMBER)"
+          gh release create $tag $exe.FullName dist/SHA256SUMS.txt `
+            --title "Nuvio Astra $ver (Build #$($env:GITHUB_RUN_NUMBER))" `
+            --generate-notes `
+            --latest
