@@ -2,149 +2,120 @@
   <img src="packaging/branding/nuvio-astra.png" width="120" alt="Nuvio Astra" />
 </p>
 
-<h1 align="center">Nuvio Astra</h1>
+<h1 align="center">Nuvio Astra — Enhanced Fork</h1>
 
 <p align="center">
-  Fork não oficial do <a href="https://github.com/NuvioMedia/NuvioDesktop">Nuvio Desktop</a> para Windows, reescrito em <b>Rust + Tauri</b> para ser leve e rápido.<br/>
-  Usa os mesmos addons do ecossistema Stremio e a mesma conta Nuvio.
+  An enhanced Windows fork of <a href="https://github.com/ScottGzin/NuvioAstra"><b>ScottGzin/NuvioAstra</b></a> (built on <b>Rust + Tauri + libmpv</b>),<br/>
+  bringing desktop cinema gestures, in-player source/episode/chapter drawers, manual watched tracking, spoiler blur, and automatic source fallback.
 </p>
 
 <p align="center">
-  <a href="../../releases/latest"><b>⬇️ Baixar a versão mais recente</b></a>
+  <img src="https://img.shields.io/badge/Platform-Windows%20x64-0078D6?style=for-the-badge&logo=windows" alt="Windows x64" />
+  <img src="https://img.shields.io/badge/Engine-Rust%20%2B%20libmpv-orange?style=for-the-badge&logo=rust" alt="Rust + libmpv" />
+  <img src="https://img.shields.io/badge/UI-Tauri%20%2B%20React-24C8DB?style=for-the-badge&logo=tauri" alt="Tauri + React" />
+  <img src="https://img.shields.io/badge/License-GPL--3.0-green?style=for-the-badge" alt="GPL-3.0" />
+</p>
+
+<p align="center">
+  <a href="https://github.com/M7QHT/NuvioAstra/actions/workflows/build-english.yml"><b>⬇️ Download Latest Windows Installer (Actions Artifact)</b></a>
 </p>
 
 ---
 
-## Capturas de tela
+## ✨ What's Different in This Fork?
 
-| Início | Detalhes |
-|---|---|
-| ![Tela inicial](docs/screenshots/home.jpg) | ![Detalhes de um título](docs/screenshots/details.jpg) |
-| **Pesquisa** | **TV ao vivo** |
-| ![Pesquisa](docs/screenshots/search.jpg) | ![TV ao vivo com guia de programação](docs/screenshots/tvaovivo.jpg) |
+This fork stays synced with **100% of upstream `ScottGzin/NuvioAstra`** (including official **English / Arabic RTL / Portuguese** UI, **TorBox Instant**, **Downloads**, **FPS Meter**, and **Card Styling**), and adds the following exclusive enhancements:
 
-<sub>Os catálogos, capas e informações exibidos vêm dos addons instalados pelo usuário. Nenhum conteúdo acompanha o aplicativo.</sub>
+| Feature | Upstream (`ScottGzin/NuvioAstra`) | This Fork (`M7QHT/NuvioAstra`) |
+| :--- | :---: | :---: |
+| **Double-click anywhere on video → Fullscreen** | Control bar only | ✅ Full video canvas |
+| **Press & Hold on video → Temporary `2x` Speed** | ❌ | ✅ Hold (~240ms) for `2x ⏩`, release to restore |
+| **Single-click on video → Play / Pause** | ❌ | ✅ Smart debounce (no conflict with double-click / hold) |
+| **Mouse Wheel over video → Volume ±5% + OSD** | ❌ | ✅ Smooth volume scroll with center OSD |
+| **In-Player `Sources` Drawer (`S`)** | ❌ | ✅ Switch streams without leaving video & **resume at exact second** |
+| **In-Player `Episodes` Drawer (`E`)** | Next episode only | ✅ Browse all seasons & episodes inside the player |
+| **In-Player `Chapters` Drawer** | ❌ | ✅ Jump directly to any video chapter |
+| **Quick Subtitle Sync (`G` / `H`)** | Menu only | ✅ Instant ±100ms keyboard sync with OSD feedback |
+| **Media Info Overlay (`I`)** | ❌ | ✅ Resolution, codec, FPS, HW decoder, buffer & dropped frames |
+| **Manual Watched Toggle (Rust `nuvio-store`)** | ❌ | ✅ Mark/unmark movies & episodes watched (account-synced) |
+| **Blur Unwatched Episode Thumbnails** | ❌ | ✅ Spoiler blur toggle in Settings + quick button on Details |
+| **Auto-Fallback on Source Failure** | ❌ | ✅ Automatically tries next playable direct source on failure |
+| **Active Playing Source Highlight** | ❌ | ✅ Highlights current stream with `Playing` badge |
 
-## Recursos
+---
 
-### Início e descoberta
+## 🎮 Player Gestures & Keyboard Shortcuts
 
-- **Destaque em carrossel**, com os dois catálogos que você escolher.
-- **Catálogos dos seus addons** em fileiras, que podem ser renomeadas, ocultadas e reordenadas.
-- **Coleções da conta Nuvio**, com capas em GIF que animam ao passar o mouse.
-- **Pesquisa** com resultados enquanto você digita e histórico.
-- **Detalhes** com temporadas, episódios, elenco e trailers do YouTube.
-- **Formato dos cards:** tamanho, cantos, pôsteres em paisagem e opção de ocultar os nomes.
+| Input | Action |
+| :--- | :--- |
+| **Left Click** (empty video area) | Play / Pause |
+| **Double Click** (empty video area) | Toggle Fullscreen |
+| **Press & Hold** (~240ms on video) | Temporary **2x speed** (`2x ⏩` pill; releases back to previous speed) |
+| **Mouse Wheel** (over video) | Volume ±5% (with OSD) |
+| `Space` / `K` | Play / Pause |
+| `←` / `→` or `J` / `L` | Seek ±10 seconds (`Shift + ←/→` for ±30s) |
+| `↑` / `↓` | Volume ±5% |
+| `M` | Mute / Unmute |
+| `F` | Toggle Fullscreen |
+| `S` | Open/Close **Sources** drawer (keeps exact timestamp) |
+| `E` | Open/Close **Episodes** drawer (series) |
+| `N` | Open **Next Episode** panel |
+| `G` / `H` | Subtitle delay `-100ms` / `+100ms` |
+| `I` | Toggle **Media Info** overlay |
+| `Esc` | Close drawer / overlay or exit player |
 
-### Fontes e downloads
+---
 
-- **TorBox:** com a sua chave de API, torrents que já estão no cache aparecem como **TB Instant** e abrem na hora, sem P2P. Funciona também com addons de torrent configurados sem chave.
-- **Downloads** de fontes HTTP, TorBox ou torrent, pelo botão no player ou com o botão direito na fonte, para a pasta que você escolher. Usa várias conexões ao mesmo tempo e continua de onde parou.
-- **Etiquetas nas fontes:** qualidade, HDR/Dolby Vision, codec, áudio, tamanho e seeds.
+## 📸 Screenshots
 
-### Player
+| Home | Details |
+| :---: | :---: |
+| ![Home screen](docs/screenshots/home.jpg) | ![Title details](docs/screenshots/details.jpg) |
+| **Search** | **Live TV & EPG** |
+| ![Search](docs/screenshots/search.jpg) | ![Live TV with program guide](docs/screenshots/tvaovivo.jpg) |
 
-- **Player embutido** (libmpv), com aceleração por hardware, faixas de áudio e controle de velocidade.
-- **Legendas dentro do player:** do arquivo, da fonte e dos addons, com atraso, tamanho e posição.
-- **Estilo das legendas:** fontes do sistema ou importadas, cores, contorno, sombra, fundo e alinhamento.
-- **Pular introdução, recapitulação e créditos**, usando os capítulos do vídeo, IntroDB e AniSkip, sem precisar de chave. Também pode pular automaticamente.
-- **Próximo episódio**, com a escolha da fonte por cima do vídeo.
-- **Picture-in-picture** com controles.
-- **Torrent / P2P** no próprio player, com reprodução antes do download terminar.
+<sub>Catalogs, artwork, and streams come solely from user-installed addons. No media content is included with the application.</sub>
 
-### Qualidade de imagem
+---
 
-- **Anime4K** com modos A, B, C, A+A, B+B e C+A, além de efeitos de nitidez, traço e redução de ruído.
-- **Ajustes de cor** e melhoria para filmes e séries.
-- **Movimento:** "Sem tremidas" (ajusta o ritmo ao monitor) ou "Fluido" (mistura quadros vizinhos).
-- **NVIDIA RTX Video** Super Resolution e HDR, em placas e drivers compatíveis.
+## 🚀 All Included Features (Upstream + Fork)
 
-### Biblioteca, conta e perfis
+- **Multi-Language UI:** Official **English**, **Arabic (RTL)**, and **Portuguese** support in **Settings → Profile & Data** (synced with your Nuvio account).
+- **TorBox & P2P Streaming:** Built-in **TorBox** integration (`TB Instant` cached playback) plus native `nuvio_engine.dll` P2P torrent streaming.
+- **Built-in Downloads:** Download HTTP, TorBox, or torrent sources with multi-connection resume directly from the player or right-click menu.
+- **High-End Video Engine (`libmpv`):** Hardware decoding, **Anime4K** presets, **NVIDIA RTX Video Super Resolution & HDR**, motion smoothing, **FPS Meter**, and full subtitle appearance customization.
+- **Smart Watching:** Auto-skip intro/recap/credits (IntroDB, AniSkip, chapters), customizable watched threshold (90%–100%), manual **Watched** toggles, **Spoiler Blur**, and **Auto-Fallback** on broken streams.
+- **Profiles & Sync:** Multi-profile support with PIN locks, avatars, and automatic Nuvio account sync.
 
-- **Continuar assistindo** com o próximo episódio e porcentagem de assistido ajustável de 90% a 100%.
-- **Favoritos e histórico** por perfil.
-- **Perfis** com PIN e avatares.
-- **Sincronização automática com a conta Nuvio:** perfis, addons, favoritos, progresso, ordem do Início e preferências compatíveis. As coleções são recebidas da conta.
-- **Idioma da interface:** português, inglês ou árabe (da direita para a esquerda), salvo na conta Nuvio. Tradução para inglês e árabe com base na contribuição de aelrased.
+---
 
-### TV ao vivo e atualizações
+## 💻 Installation
 
-- **TV ao vivo** com categorias, favoritos, filtro por addon e guia de programação (quando o addon informa).
-- **Atualizações automáticas** pelo próprio app, com verificação de assinatura.
+1. Open the latest successful run under [**Actions → Build English (Windows x64)**](https://github.com/M7QHT/NuvioAstra/actions/workflows/build-english.yml).
+2. Download the **`Nuvio-Astra-English-Windows-x64`** artifact and extract it.
+3. Run `Nuvio-Astra-<version>-x64-setup.exe` (no administrator privileges required).
 
-O que ainda não foi portado do Nuvio original está em **Configurações → Ainda não disponível**.
+**Requirements:** Windows 10 or Windows 11 (64-bit) with Microsoft Edge WebView2 (pre-installed on Windows 11).
 
-## Instalação
+> **Note:** Since the installer is unsigned, Windows SmartScreen may ask for confirmation on first launch (**More info → Run anyway**). App data is stored in `%APPDATA%\NuvioNextGen` and preserved across updates.
 
-1. Baixe `Nuvio-Astra-<versão>-x64-setup.exe` na página de [Releases](../../releases/latest).
-2. Execute o instalador. Não é preciso ser administrador.
-3. Novas versões chegam pelo próprio aplicativo: um aviso no topo mostra a versão e as novidades.
+---
 
-**Requisitos:** Windows 10 ou 11 (64 bits) com o Microsoft Edge WebView2 (já incluído no Windows 11).
-
-O instalador ainda não tem assinatura digital, então o Windows SmartScreen pode pedir confirmação na primeira vez: **Mais informações → Executar assim mesmo**. Os arquivos de cada versão têm checksums em `SHA256SUMS.txt`.
-
-Na primeira abertura, o app pede a conta Nuvio e sincroniza sozinho (também dá para continuar sem conta). Quem já usa o Nuvio Desktop pode ter perfis, addons e biblioteca importados automaticamente; a senha e o login do Nuvio Desktop não são copiados, e os arquivos originais não são alterados. Os dados do Nuvio Astra ficam em `%APPDATA%\NuvioNextGen` e são mantidos em atualizações e desinstalações.
-
-## Compilar a partir do código
+## 🛠️ Build from Source
 
 ```powershell
 cargo test --workspace
 cd apps\nuvio-desktop\web; npm ci; npm run build; cd ..\..\..
 cargo build --release -p nuvio-desktop
-powershell -NoProfile -ExecutionPolicy Bypass -File packaging\windows\build-release.ps1 -SkipBuild -LibMpv <caminho\libmpv-2.dll>
+powershell -NoProfile -ExecutionPolicy Bypass -File packaging\windows\build-release.ps1 -SkipBuild -LibMpv <path\to\libmpv-2.dll>
 ```
 
-Configurações opcionais de build (servidor da conta, repositório de atualizações) estão em [`local.properties.example`](local.properties.example). Publicação e releases automáticas: [`GITHUB_PUBLISH.md`](GITHUB_PUBLISH.md). Detalhes técnicos: [`docs/`](docs/).
+---
 
-## Créditos e direitos autorais
+## 📜 Credits & License
 
-**Nuvio Astra:** modificações e código novo © 2026 [ScottGzin](https://github.com/ScottGzin) e contribuidores, sob a GPL-3.0.
+- **Upstream Project:** [ScottGzin/NuvioAstra](https://github.com/ScottGzin/NuvioAstra) © 2026 ScottGzin & contributors (GPL-3.0).
+- **Original Project:** [NuvioMedia/NuvioDesktop](https://github.com/NuvioMedia/NuvioDesktop) © NuvioMedia & contributors (GPL-3.0).
+- **License:** [GNU General Public License v3.0](LICENSE).
 
-**Projeto original:** o Nuvio Astra é uma versão modificada, iniciada em novembro de 2026, do [Nuvio Desktop](https://github.com/NuvioMedia/NuvioDesktop), © equipe Nuvio / [NuvioMedia](https://github.com/NuvioMedia) e seus contribuidores, licenciado sob a GPL-3.0. Os direitos sobre o código original continuam com seus autores. O nome, a marca e o logotipo **Nuvio** pertencem aos seus respectivos donos.
-
-### Componentes incluídos
-
-| Componente | Autoria | Licença |
-|---|---|---|
-| [Nuvio Engine](https://github.com/NuvioMedia/nuvio-engine) (`nuvio_engine.dll`) | © NuvioMedia | GPL-3.0-or-later |
-| [libtorrent](https://www.libtorrent.org), dentro do Nuvio Engine | © Arvid Norberg e contribuidores | BSD-3-Clause |
-| [Boost](https://www.boost.org), dentro do Nuvio Engine | © autores do Boost | BSL-1.0 |
-| [OpenSSL](https://www.openssl.org), dentro do Nuvio Engine | © autores do OpenSSL | Apache-2.0 |
-| [try_signal](https://github.com/arvidn/try_signal), dentro do Nuvio Engine | © 2016 Arvid Norberg | BSD-3-Clause |
-| [mpv / libmpv](https://mpv.io) (`libmpv-2.dll`) | © autores do mpv | GPL-2.0-or-later |
-| [FFmpeg](https://ffmpeg.org), dentro do libmpv | © desenvolvedores do FFmpeg | GPL, nesta compilação |
-| [Anime4K](https://github.com/bloc97/Anime4K) | © 2019–2021 bloc97 | MIT (`AutoDownscalePre`: Unlicense) |
-| [Tauri](https://tauri.app) | © 2017–presente Tauri Apps Contributors | MIT ou Apache-2.0 |
-| [React](https://react.dev) | © Meta Platforms, Inc. e afiliadas | MIT |
-
-As demais bibliotecas usam licenças livres, como MIT, Apache-2.0, BSD, ISC, Zlib e Unicode-3.0. Os avisos de terceiros estão em [`packaging/licenses`](packaging/licenses).
-
-### Serviços e dados de terceiros
-
-Estes serviços não fazem parte do Nuvio Astra, não têm vínculo com o projeto e seguem os próprios termos:
-
-- **[IntroDB](https://introdb.app):** tempos de introdução, recapitulação e créditos enviados pela comunidade ([termos](https://introdb.app/docs/terms)).
-- **[AniSkip](https://api.aniskip.com/api-docs):** tempos de abertura e encerramento de animes enviados pela comunidade.
-- **[ARM](https://github.com/BeeeQueue/arm-server)**, de BeeeQueue, com dados de [Fribb/anime-lists](https://github.com/Fribb/anime-lists): correspondência entre identificadores de animes.
-- **YouTube:** reprodução de trailers. YouTube é uma marca da Google LLC.
-- **Addons:** catálogos, capas, informações, fontes e legendas pertencem aos seus provedores e autores.
-
-NVIDIA e RTX são marcas da NVIDIA Corporation. Windows e WebView2 são produtos da Microsoft Corporation.
-
-## Aviso legal
-
-- O Nuvio Astra **não é afiliado, patrocinado nem endossado** pela equipe do Nuvio.
-- O aplicativo **não hospeda, distribui nem fornece** filmes, séries, canais ou qualquer outro conteúdo. Ele apenas exibe o que os addons escolhidos pelo usuário oferecem. Os addons são de terceiros e não fazem parte deste projeto.
-- Cada usuário é responsável pelos addons que instala e pelo conteúdo que acessa, de acordo com as leis do seu país. Ao usar torrent/P2P, o seu endereço IP fica visível para outros participantes da rede.
-- Marcas, capas e imagens que aparecem no aplicativo ou nas capturas pertencem aos seus respectivos donos.
-
-## Privacidade
-
-- A senha da conta Nuvio é enviada apenas ao servidor da conta e não é armazenada. A sessão fica criptografada neste computador pelo Windows (DPAPI).
-- Com os botões de pular ativados, o app envia ao IntroDB, AniSkip ou ARM o identificador público do título e, para séries, a temporada ou o episódio. Como em qualquer acesso à internet, esses serviços veem o seu IP. Os botões podem ser desligados em **Configurações → Reprodução**.
-- Os addons instalados recebem os pedidos de catálogo, fontes e legendas. Para legendas, isso pode incluir o nome, o tamanho e o identificador do arquivo de vídeo.
-
-## Licença
-
-[GNU General Public License v3.0](LICENSE), a mesma do Nuvio Desktop. Você pode usar, estudar, modificar e redistribuir o Nuvio Astra seguindo os termos dessa licença, mantendo os avisos de direitos autorais e disponibilizando o código-fonte. O programa é fornecido **sem qualquer garantia**. O código-fonte completo de cada versão está neste repositório.
+> **Disclaimer:** This project is an independent community fork and is not affiliated with or endorsed by NuvioMedia. The application does not host, provide, or distribute any media content.
