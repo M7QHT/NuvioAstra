@@ -15,7 +15,7 @@ import type {
   P2pStatus,
   TorrentPrepared,
   AddonPreview, AddonsView, Bootstrap, CatalogPage, ChannelList, CssRect, Details, HistoryEntry, HistoryPage, HomeView, LibraryItem,
-  AccountStatus, AvatarItem, PinResult, SyncPreview, PlaybackItem, PlayerCommand, ProfilesView, PlayerInfo, PlayerSnapshot, ProfileSettings, SearchSection, SettingsView, StreamGroup,
+  AccountStatus, AvatarItem, PinResult, SyncPreview, PlaybackItem, PlayerCommand, ProfilesView, PlayerInfo, PlayerSnapshot, ProfileSettings, SearchSection, SettingsView, StreamGroup, SearchAddon, DiscoverCatalog,
   TitleProgress,
   WatchedItemInput,
 } from "./types";
@@ -90,7 +90,11 @@ export const api = {
   search: (query: string) => invoke<SearchSection[]>("search_all", { query }),
   details: (contentType: string, id: string) =>
     cached(detailsCache, `${contentType}/${id}`, () => invoke<Details>("meta_details", { contentType, id })),
-  streams: (contentType: string, id: string) => invoke<StreamGroup[]>("title_streams", { contentType, id }),
+  /** `refresh`: asks the addons again ("Recarregar" in the sources panel). */
+  streams: (contentType: string, id: string, refresh = false) => invoke<StreamGroup[]>("title_streams", { contentType, id, refresh }),
+  searchAddons: () => invoke<SearchAddon[]>("search_addons"),
+  searchAddonSet: (key: string, enabled: boolean) => invoke<SearchAddon[]>("search_addon_set", { key, enabled }),
+  discoverCatalogs: () => invoke<DiscoverCatalog[]>("discover_catalogs"),
   settingsGet: () => invoke<SettingsView>("settings_get"),
   /** Saves and returns what was stored (validated by Rust). `previous`: what was loaded before the
    *  edit, so only the edit is written. `profile`: the one edited. Home changes drop the cached pages. */

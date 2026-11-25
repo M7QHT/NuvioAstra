@@ -16,17 +16,16 @@ import { Sidebar, type Tab } from "./components/Sidebar";
 import { UpdateBanner } from "./components/UpdateBanner";
 import { FullPlayer } from "./player/FullPlayer";
 import { usePlayer } from "./player/PlayerContext";
-import { CatalogGrid } from "./screens/CatalogGrid";
 import { Details } from "./screens/Details";
-import { Discover } from "./screens/Discover";
 import { Folder } from "./screens/Folder";
 import { Home } from "./screens/Home";
 import { Library } from "./screens/Library";
 import { resumeTarget } from "./library";
 import { LiveTv } from "./screens/LiveTv";
 import { Search } from "./screens/Search";
+import { Discover } from "./screens/Discover";
 import { Settings } from "./screens/Settings";
-import { metaRef, type Bootstrap, type CollectionView, type FolderView, type HistoryEntry, type HomeRow, type MetaPreview, type MetaRef, type ProfilesView } from "./types";
+import { metaRef, type Bootstrap, type CollectionView, type FolderView, type HistoryEntry, type MetaPreview, type MetaRef, type ProfilesView } from "./types";
 import { t } from "./i18n";
 
 
@@ -42,8 +41,6 @@ export function App() {
   const [details, setDetails] = useState<MetaRef | null>(null);
   /** Collection folder opened from Home (stays under the details of a title opened from it). */
   const [folder, setFolder] = useState<{ collection: CollectionView; folder: FolderView } | null>(null);
-  /** Full catalog grid opened via "See all →" on a Home row. */
-  const [catalog, setCatalog] = useState<HomeRow | null>(null);
   const [openError, setOpenError] = useState<string | null>(null);
   const [profiles, setProfiles] = useState<ProfilesView | null>(null);
   const [profilesFailed, setProfilesFailed] = useState(false);
@@ -105,14 +102,12 @@ export function App() {
           setProfileEpoch((e) => e + 1);
           setDetails(null);
           setFolder(null);
-          setCatalog(null);
           setOpenError(null);
           setBoot(null);
           api.profilesList().then(setProfiles, () => {});
         } else {
           setAddonsEpoch((e) => e + 1);
           setFolder(null); // its catalogs were resolved with the previous addons
-          setCatalog(null);
         }
         api.bootstrap().then(setBoot, (e) => setBootError(errorText(e)));
       }),
@@ -147,7 +142,6 @@ export function App() {
       if (next !== "tv" && player.session?.view === "embedded") void player.close();
       setDetails(null);
       setFolder(null);
-      setCatalog(null);
       setTab(next);
     },
     [player],
@@ -156,10 +150,9 @@ export function App() {
   // Desktop UX navigation: Mouse Back button (button 3), Alt+← to go back, Ctrl+K or / for quick search.
   const goBack = useCallback(() => {
     if (details) setDetails(null);
-    else if (catalog) setCatalog(null);
     else if (folder) setFolder(null);
     else if (tab !== "home") select("home");
-  }, [catalog, details, folder, select, tab]);
+  }, [details, folder, select, tab]);
 
   useEffect(() => {
     const onMouseUp = (e: MouseEvent) => {
@@ -259,28 +252,16 @@ export function App() {
           {boot && boot.addonsFailed > 0 && (
             <div className="banner">{t("{failed} de {total} addon(s) não responderam; os demais estão disponíveis.", { failed: boot.addonsFailed, total: boot.addonsEnabled })}</div>
           )}
-          <div className="screen" hidden={details !== null || folder !== null || catalog !== null || tab !== "home"}>
-            <Home
-              key={dataKey}
-              onOpen={open}
-              onResume={resume}
-              onOpenEntry={openEntry}
-              onOpenFolder={(collection, f) => setFolder({ collection, folder: f })}
-              onSeeAll={(row) => setCatalog(row)}
-            />
+          <div className="screen" hidden={details !== null || folder !== null || tab !== "home"}>
+            <Home key={dataKey} onOpen={open} onResume={resume} onOpenEntry={openEntry} onOpenFolder={(collection, f) => setFolder({ collection, folder: f })} />
           </div>
           {folder && tab === "home" && (
             <div className="screen" hidden={details !== null}>
               <Folder key={`${dataKey}/${folder.collection.id}/${folder.folder.id}`} collection={folder.collection} folder={folder.folder} onOpen={open} onBack={() => setFolder(null)} />
             </div>
           )}
-          {catalog && tab === "home" && (
-            <div className="screen" hidden={details !== null}>
-              <CatalogGrid key={`${dataKey}/${catalog.key}`} row={catalog} onOpen={open} onBack={() => setCatalog(null)} />
-            </div>
-          )}
-          {tab === "discover" && <div className="screen" hidden={details !== null}><Discover key={dataKey} onOpen={open} /></div>}
           {tab === "search" && <div className="screen" hidden={details !== null}><Search key={dataKey} onOpen={open} /></div>}
+          {tab === "discover" && <div className="screen" hidden={details !== null}><Discover key={dataKey} onOpen={open} /></div>}
           {tab === "tv" && <div className="screen screen-fill"><LiveTv key={dataKey} /></div>}
           {tab === "library" && <div className="screen" hidden={details !== null}><Library key={profileEpoch} onOpen={open} onResume={resume} onOpenEntry={openEntry} /></div>}
           {tab === "settings" && <div className="screen screen-fill" hidden={details !== null}><Settings key={profileEpoch} /></div>}

@@ -8,12 +8,14 @@
 // - answers of this session are kept in memory: going back to a query is instant;
 // - typing is debounced lightly (220 ms); an outdated answer never replaces a newer one.
 // Recent searches are remembered (last 12) and shown when the field is empty.
+// "Pesquisar em" (Astra): each addon with search catalogs can be left out of the search, e.g. to
+// search only the metadata addon. Kept per profile on this computer.
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { dataEpoch, onDataEpoch } from "../api";
+import { api, dataEpoch, onDataEpoch } from "../api";
 import { ResultRow } from "../components/ResultRow";
 import { invoke, listen } from "../tauri";
-import type { MetaPreview, SearchSection } from "../types";
+import type { MetaPreview, SearchAddon, SearchSection } from "../types";
 import { t } from "../i18n";
 
 interface Props {
@@ -72,6 +74,62 @@ function saveHistory(list: string[]) {
   }
 }
 
+/** "Pesquisar em": button with the count of addons searched and a list to turn each on or off. */
+function SearchAddons({ addons, onToggle }: { addons: SearchAddon[]; onToggle(key: string | null, enabled: boolean): void }) {
+  const [open, setOpen] = useState(false);
+  const box = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (!open) return;
+    const close = (e: Event) => {
+      if (e instanceof KeyboardEvent ? e.key === "Escape" : !box.current?.contains(e.target as Node)) setOpen(false);
+    };
+    window.addEventListener("pointerdown", close, true);
+    window.addEventListener("keydown", close, true);
+    return () => {
+      window.removeEventListener("pointerdown", close, true);
+      window.removeEventListener("keydown", close, true);
+    };
+  }, [open]);
+  if (addons.length < 2) return null;
+  const on = addons.filter((a) => a.enabled).length;
+  return (
+    <div className="search-addons" ref={box}>
+      <button
+        className={`search-addons-btn ${on < addons.length ? "filtered" : ""}`}
+        onClick={() => setOpen((o) => !o)}
+        aria-expanded={open}
+        aria-haspopup="dialog"
+        data-testid="search-addons"
+        title={t("Escolher em quais addons pesquisar")}
+      >
+        <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 5h16l-6 7.5V19l-4 1.5v-8z" /></svg>
+        <span>{on === addons.length ? t("Todos os addons") : t("{on} de {total} addons", { on, total: addons.length })}</span>
+      </button>
+      {open && (
+        <div className="search-addons-pop" role="dialog" aria-label={t("Pesquisar em")} data-testid="search-addons-pop">
+          <div className="search-addons-head">
+            <b>{t("Pesquisar em")}</b>
+            {on < addons.length && (
+              <button className="link" onClick={() => onToggle(null, true)}>{t("Marcar todos")}</button>
+            )}
+          </div>
+          {addons.map((a) => (
+            <label key={a.key} className="search-addon" data-addon={a.name}>
+              <input type="checkbox" checked={a.enabled} onChange={(e) => onToggle(a.key, e.target.checked)} />
+              {a.logo ? <img src={a.logo} alt="" /> : <span className="search-addon-logo" aria-hidden>{a.name.slice(0, 1)}</span>}
+              <span className="search-addon-text">
+                <span>{a.name}</span>
+                <small className="muted">{a.catalogs.map((c) => t(c)).join(" · ")}</small>
+              </span>
+            </label>
+          ))}
+          <p className="muted small">{t("Só os addons marcados são consultados na pesquisa deste perfil.")}</p>
+        </div>
+      )}
+    </div>
+  );
+}
+
 export function Search({ onOpen }: Props) {
   const [query, setQuery] = useState(lastQuery);
   const [result, setResult] = useState<Result | null>(() => cache.get(lastQuery.trim()) ?? null);
@@ -80,8 +138,33 @@ export function Search({ onOpen }: Props) {
   const requestId = useRef(0);
   const pending = useRef<{ id: number; q: string; epoch: number; parts: Part[] } | null>(null);
   const input = useRef<HTMLInputElement>(null);
+  const [addons, setAddons] = useState<SearchAddon[]>([]);
+  // Changes when the searched addons change: the same query is asked again.
+  const [scope, setScope] = useState(0);
 
   useEffect(() => input.current?.focus(), []);
+  useEffect(() => {
+    let alive = true;
+    api.searchAddons().then((list) => alive && setAddons(list), () => {});
+    return () => {
+      alive = false;
+    };
+  }, []);
+  /** One addon on/off; `key` null: every addon on ("Marcar todos"), saved one after the other. */
+  const toggleAddon = async (key: string | null, enabled: boolean) => {
+    const keys = key === null ? addons.filter((a) => !a.enabled).map((a) => a.key) : [key];
+    setAddons((list) => list.map((a) => (keys.includes(a.key) ? { ...a, enabled } : a)));
+    try {
+      let list: SearchAddon[] = [];
+      for (const k of keys) list = await api.searchAddonSet(k, enabled);
+      setAddons(list);
+    } catch {
+      api.searchAddons().then(setAddons, () => {});
+    }
+    cache.clear();
+    setScope((n) => n + 1);
+  };
+  const noneSearched = addons.length > 0 && addons.every((a) => !a.enabled);
 
   const addHistory = (q: string) => {
     const t = q.trim();
@@ -132,7 +215,7 @@ export function Search({ onOpen }: Props) {
   useEffect(() => {
     const q = query.trim();
     lastQuery = query;
-    if (q.length < 2) {
+    if (q.length < 2 || noneSearched) {
       pending.current = null;
       setResult(null);
       setPreview(null);
@@ -159,7 +242,8 @@ export function Search({ onOpen }: Props) {
       });
     }, DEBOUNCE_MS);
     return () => window.clearTimeout(timer);
-  }, [query]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [query, scope, noneSearched]);
 
   // A search left on screen for a moment with results goes to the history.
   useEffect(() => {
@@ -171,7 +255,7 @@ export function Search({ onOpen }: Props) {
   }, [result]);
 
   const shown = result?.sections.length ? result.sections : preview ?? [];
-  const loading = query.trim().length >= 2 && !result?.done;
+  const loading = query.trim().length >= 2 && !result?.done && !noneSearched;
   const open = (item: MetaPreview) => {
     addHistory(query);
     onOpen(item);
@@ -193,6 +277,7 @@ export function Search({ onOpen }: Props) {
           data-testid="search-input"
         />
         {loading && <span className="spinner" aria-label={t("Buscando")} />}
+        <SearchAddons addons={addons} onToggle={(key, enabled) => void toggleAddon(key, enabled)} />
       </div>
 
       {empty && (
@@ -218,6 +303,8 @@ export function Search({ onOpen }: Props) {
           <div className="screen-message muted">{t("Digite ao menos 2 letras.")}</div>
         )
       )}
+
+      {!empty && noneSearched && <div className="screen-message">{t("Nenhum addon marcado em “Pesquisar em”.")}</div>}
 
       {!empty && result?.done && !result.sections.length && <div className="screen-message">{t("Nada encontrado para “{query}”.", { query: query.trim() })}</div>}
 

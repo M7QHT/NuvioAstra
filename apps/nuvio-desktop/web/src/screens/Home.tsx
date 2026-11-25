@@ -14,14 +14,13 @@ import { CollectionRow } from "../components/CollectionRow";
 import { ContinueWatchingRow } from "../components/ContinueWatching";
 import { HeroCarousel } from "../components/HeroCarousel";
 import type { CollectionView, FolderView, HistoryEntry, HomeRow, HomeView, MetaPreview } from "../types";
-import { t } from "../i18n";
+import { addonLabel, localizeCatalogTitle, t } from "../i18n";
 
 interface Props {
   onOpen(item: MetaPreview): void;
   onResume(entry: HistoryEntry): void;
   onOpenEntry?(entry: HistoryEntry): void;
   onOpenFolder(collection: CollectionView, folder: FolderView): void;
-  onSeeAll?(row: HomeRow): void;
 }
 
 const HERO_ITEM_LIMIT = 8;
@@ -44,7 +43,10 @@ function shuffle<T>(list: T[]): T[] {
   return out;
 }
 
-export function Home({ onOpen, onResume, onOpenEntry, onOpenFolder, onSeeAll }: Props) {
+/** Titles per Home row; the "+" at the end opens the whole catalog. */
+const ROW_LIMIT = 20;
+
+export function Home({ onOpen, onResume, onOpenEntry, onOpenFolder }: Props) {
   const [view, setView] = useState<HomeView | null>(viewCache);
   const [error, setError] = useState<string | null>(null);
   const [hero, setHero] = useState<MetaPreview[] | null>(heroCache);
@@ -112,6 +114,19 @@ export function Home({ onOpen, onResume, onOpenEntry, onOpenFolder, onSeeAll }: 
     };
   }, [view]);
 
+  // "Ver todos": the catalog opens in the folder screen as a one-catalog grid (pages load as it scrolls).
+  const seeAll = (row: HomeRow) => {
+    const title = localizeCatalogTitle(row.title);
+    onOpenFolder(
+      { id: `catalog_${row.key}`, title: addonLabel(row.addonName), backdrop: null, pinToTop: false, viewMode: "TABBED_GRID", showAllTab: false, folders: [] },
+      {
+        id: row.key, title, image: null, stillImage: null, emoji: null, shape: "poster", hideTitle: false, backdrop: null, logo: null,
+        sources: [{ key: row.key, genre: null, label: title, addonName: row.addonName, contentType: row.contentType, supportsPagination: row.supportsPagination }],
+        skippedSources: 0,
+      },
+    );
+  };
+
   if (error) return <div className="screen-message">{t("Não foi possível ler os addons:")} {error}</div>;
   if (!rows) return <div className="screen-message">{t("Carregando catálogos…")}</div>;
   if (!rows.length) return <div className="screen-message">{t("Nenhum catálogo disponível. Ative ou adicione um addon em Configurações → Addons para ver catálogos na tela inicial.")}</div>;
@@ -124,7 +139,7 @@ export function Home({ onOpen, onResume, onOpenEntry, onOpenFolder, onSeeAll }: 
         row.collection ? (
           <CollectionRow key={`${generation}:${row.key}`} title={row.title} collection={row.collection} onOpenFolder={onOpenFolder} />
         ) : (
-          <CatalogRow key={`${generation}:${row.key}`} row={row} onOpen={onOpen} onSeeAll={onSeeAll} />
+          <CatalogRow key={`${generation}:${row.key}`} row={row} onOpen={onOpen} limit={ROW_LIMIT} onSeeAll={seeAll} />
         ),
       )}
     </div>

@@ -86,13 +86,46 @@ pub async fn search_all(state: State<'_, AppState>, query: String) -> Result<Vec
 pub async fn search_stream(app: tauri::AppHandle, state: State<'_, AppState>, query: String, request_id: u64) -> Result<(), String> {
     use tauri::Emitter;
     let loaded = state.addons.loaded().await?;
+    let disabled = state.app_store.profile_settings(loaded.profile).map_err(|e| e.to_string())?.search.disabled_addons;
+    let manifests = search::searched(&loaded.manifests, &disabled);
     let emitter = app.clone();
-    let done = search::search_streamed(&state.addons.client, &loaded.manifests, &query, request_id, move |part| {
+    let done = search::search_streamed(&state.addons.client, &manifests, &query, request_id, move |part| {
         let _ = emitter.emit("search-part", part);
     })
     .await;
     let _ = app.emit("search-done", done);
     Ok(())
+}
+
+/// Addons with search catalogs and whether the search asks them ("Pesquisar em").
+#[tauri::command]
+pub async fn search_addons(state: State<'_, AppState>) -> Result<Vec<search::SearchAddon>, String> {
+    let loaded = state.addons.loaded().await?;
+    let disabled = state.app_store.profile_settings(loaded.profile).map_err(|e| e.to_string())?.search.disabled_addons;
+    Ok(search::search_addons(&loaded.manifests, &disabled))
+}
+
+/// Turns one addon on or off in the search (this profile, this computer).
+#[tauri::command]
+pub async fn search_addon_set(state: State<'_, AppState>, key: String, enabled: bool) -> Result<Vec<search::SearchAddon>, String> {
+    let loaded = state.addons.loaded().await?;
+    let saved = state
+        .app_store
+        .update_profile_settings(loaded.profile, |s| {
+            s.search.disabled_addons.retain(|k| k != &key);
+            if !enabled {
+                s.search.disabled_addons.push(key.clone());
+            }
+        })
+        .map_err(|e| e.to_string())?;
+    Ok(search::search_addons(&loaded.manifests, &saved.search.disabled_addons))
+}
+
+/// Catalogs that can be browsed in Descobrir (pages come from `catalog_page`).
+#[tauri::command]
+pub async fn discover_catalogs(state: State<'_, AppState>) -> Result<Vec<search::DiscoverCatalog>, String> {
+    let loaded = state.addons.loaded().await?;
+    Ok(search::discover_catalogs(&loaded.manifests))
 }
 
 #[tauri::command]
@@ -150,9 +183,10 @@ pub async fn livetv_toggle_favorite(state: State<'_, AppState>, key: String) -> 
 
 /// Sources of one title from the enabled addons (cached manifests), asked when the user opens them.
 #[tauri::command]
-pub async fn title_streams(state: State<'_, AppState>, content_type: String, id: String) -> Result<Vec<StreamGroup>, String> {
+/// `refresh` ("Recarregar" in the sources panel): asks the addons again, past any HTTP cache.
+pub async fn title_streams(state: State<'_, AppState>, content_type: String, id: String, refresh: Option<bool>) -> Result<Vec<StreamGroup>, String> {
     let loaded = state.addons.loaded().await?;
-    Ok(streams::search_in(&state.addons.client, &state.streams, &loaded.manifests, &content_type, &id).await)
+    Ok(streams::search_with(&state.addons.client, &state.streams, &loaded.manifests, &content_type, &id, refresh.unwrap_or(false)).await)
 }
 
 /// Resolves one channel, on click only: just the addon that listed it is asked (no other addon,

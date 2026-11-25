@@ -1,6 +1,7 @@
 // Sources of one title/episode, asked to the addons only when shown. Direct and torrent (P2P)
 // streams play in the app's player; with TorBox, cached torrents are marked "TB Instant" and the
 // addons' own TorBox sources play too. Right click: play or download. Badges come from the texts.
+// `reload` (the sources panel's "Recarregar"): each new value asks every addon again.
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
@@ -22,9 +23,12 @@ interface Props {
   activeKey?: string;
   onPlay(stream: StreamEntry, torbox: TorboxStates, allStreams?: StreamEntry[]): void;
   onDownload?(stream: StreamEntry, torbox: TorboxStates): void;
+  reload?: number;
+  /** Whether the addons are being asked now (the reload button spins meanwhile). */
+  onLoading?(loading: boolean): void;
 }
 
-export function StreamList({ contentType, id, activeKey, onPlay, onDownload }: Props) {
+export function StreamList({ contentType, id, activeKey, onPlay, onDownload, reload = 0, onLoading }: Props) {
   const [groups, setGroups] = useState<StreamGroup[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [torbox, setTorbox] = useState<TorboxStates>({});
@@ -38,19 +42,26 @@ export function StreamList({ contentType, id, activeKey, onPlay, onDownload }: P
     setError(null);
     setTorbox({});
     setFilter("all");
-    api.streams(contentType, id).then(
+    onLoading?.(true);
+    api.streams(contentType, id, reload > 0).then(
       (g) => {
         if (cancelled) return;
+        onLoading?.(false);
         setGroups(g);
         const keys = g.flatMap((group) => group.streams).filter((s) => s.kind === "torrent" || s.kind === "debrid").map((s) => s.key);
         if (keys.length) api.torboxCheck(keys).then((states) => !cancelled && setTorbox(states), () => {});
       },
-      (e) => !cancelled && setError(errorText(e)),
+      (e) => {
+        if (cancelled) return;
+        onLoading?.(false);
+        setError(errorText(e));
+      },
     );
     return () => {
       cancelled = true;
     };
-  }, [contentType, id]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [contentType, id, reload]);
 
   useEffect(() => {
     if (!menu) return;

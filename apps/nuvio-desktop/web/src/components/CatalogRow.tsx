@@ -1,5 +1,7 @@
 // One Home row. The catalog is requested only when the row comes near the viewport; more pages
 // are requested when the user scrolls the row to its end (if the catalog paginates).
+// With `limit` (Home): only the first titles are shown, then a "+" card that opens the whole
+// catalog (`onSeeAll`) as a grid.
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { api, errorText } from "../api";
@@ -12,12 +14,14 @@ interface Props {
   row: HomeRow;
   onOpen(item: MetaPreview): void;
   onLoaded?(row: HomeRow, items: MetaPreview[]): void;
-  onSeeAll?(row: HomeRow): void;
   /** Genre filter (catalogs of a collection folder). */
   genre?: string | null;
+  /** Titles shown in the row; the rest is in the catalog screen opened by the "+" card. */
+  limit?: number;
+  onSeeAll?(row: HomeRow): void;
 }
 
-export function CatalogRow({ row, onOpen, onLoaded, onSeeAll, genre = null }: Props) {
+export function CatalogRow({ row, onOpen, onLoaded, genre = null, limit, onSeeAll }: Props) {
   const [ref, inView] = useInView<HTMLElement>();
   const [items, setItems] = useState<MetaPreview[] | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -50,15 +54,18 @@ export function CatalogRow({ row, onOpen, onLoaded, onSeeAll, genre = null }: Pr
     if (inView && items === null && error === null) void load(null);
   }, [inView, items, error, load]);
 
+  const limited = limit !== undefined && !!onSeeAll;
   const onScroll = () => {
     const el = track.current;
-    if (el && nextSkip !== null && el.scrollLeft + el.clientWidth > el.scrollWidth - 600) void load(nextSkip);
+    if (el && !limited && nextSkip !== null && el.scrollLeft + el.clientWidth > el.scrollWidth - 600) void load(nextSkip);
   };
 
   const scrollBy = (dir: number) => track.current?.scrollBy({ left: dir * track.current.clientWidth * 0.85, behavior: "smooth" });
 
   // A catalog that answered with nothing is hidden, like the original's empty rows.
   if (items !== null && items.length === 0) return null;
+  const shown = items && limited ? items.slice(0, limit) : items;
+  const seeAll = limited && items !== null && (items.length > limit! || nextSkip !== null);
 
   return (
     <section className="row-section" ref={ref} data-content-type={row.contentType}>
@@ -83,9 +90,19 @@ export function CatalogRow({ row, onOpen, onLoaded, onSeeAll, genre = null }: Pr
         </div>
       ) : (
         <div className="row-track" ref={track} onScroll={onScroll}>
-          {items
-            ? items.map((item) => <PosterCard key={`${item.contentType}/${item.id}`} item={item} onOpen={onOpen} />)
+          {shown
+            ? shown.map((item) => <PosterCard key={`${item.contentType}/${item.id}`} item={item} onOpen={onOpen} />)
             : Array.from({ length: 8 }, (_, i) => <div key={i} className="card skeleton" />)}
+          {seeAll && (
+            <div className="card-wrap see-all-wrap">
+              <button className="card see-all" onClick={() => onSeeAll!(row)} title={t("Ver todos")} aria-label={t("Ver todos de {title}", { title: localizeCatalogTitle(row.title) })} data-testid="see-all">
+                <div className="card-art">
+                  <span className="see-all-plus" aria-hidden>+</span>
+                </div>
+                <div className="card-title">{t("Ver todos")}</div>
+              </button>
+            </div>
+          )}
         </div>
       )}
     </section>

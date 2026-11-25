@@ -1,161 +1,231 @@
-// Stremio-style Discover screen: browse any installed addon catalog in a full grid
-// with quick Type, Catalog, and Genre filters.
+// Descobrir (port of the original's Discover, in its own tab): browse any catalog of the installed
+// addons by type, catalog and genre, as a poster grid that loads more as it scrolls.
+// - Catalogs: the original's `supportsDiscover` rule (no required search; a required genre needs
+//   its options), movies/series/anime first.
+// - Genre: "Todos" unless the catalog requires one (then its first option).
+// - Three groups only: Filmes, Séries and Anime. Anime = catalogs of type "anime" plus movie/series
+//   catalogs named after anime (e.g. "Anime - Popular"); other types (TV, collections…) are left out.
+// - The chosen catalog and genre are remembered (`DiscoverSelectionStorage`).
+// - Paging stops when the addon has no more pages or sends the same page again twice in a row (the
+//   original's duplicate-page guard). Pages come from the shared catalog page cache.
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { api, errorText } from "../api";
 import { PosterCard } from "../components/PosterCard";
-import { addonLabel, localizeCatalogTitle } from "../i18n";
-import type { HomeRow, MetaPreview } from "../types";
+import { useWhenVisible } from "../components/useInView";
+import type { DiscoverCatalog, MetaPreview } from "../types";
+import { localizeCatalogTitle, t } from "../i18n";
 
 interface Props {
   onOpen(item: MetaPreview): void;
 }
 
-const GENRES = [
-  "All", "Action", "Adventure", "Animation", "Comedy", "Crime",
-  "Documentary", "Drama", "Fantasy", "Horror", "Mystery", "Romance", "Sci-Fi", "Thriller",
-] as const;
+const SELECTION_KEY = "nuvio.discover.selection";
+
+type Group = "movie" | "series" | "anime";
+const GROUPS: { id: Group; label: string }[] = [
+  { id: "movie", label: "Filmes" },
+  { id: "series", label: "Séries" },
+  { id: "anime", label: "Anime" },
+];
+function groupOf(c: DiscoverCatalog): Group | null {
+  const type = c.contentType.toLowerCase();
+  if (type === "anime" || /anime/i.test(c.name)) return "anime";
+  if (type === "movie") return "movie";
+  if (type === "series") return "series";
+  return null;
+}
+const MAX_DUPLICATE_PAGES = 2;
+
+interface Feed {
+  items: MetaPreview[];
+  next: number | null;
+  loading: boolean;
+  error: string | null;
+  duplicates: number;
+}
+const FRESH: Feed = { items: [], next: null, loading: true, error: null, duplicates: 0 };
+
+function loadSelection(): { key?: string; genre?: string | null } {
+  try {
+    const v = JSON.parse(localStorage.getItem(SELECTION_KEY) ?? "{}");
+    return v && typeof v === "object" ? v : {};
+  } catch {
+    return {};
+  }
+}
+function saveSelection(key: string, genre: string | null) {
+  try {
+    localStorage.setItem(SELECTION_KEY, JSON.stringify({ key, genre }));
+  } catch {
+    /* this session only */
+  }
+}
+
+/** `resolveGenreSelection`: a valid chosen genre, else the first one when required, else all. */
+function genreFor(catalog: DiscoverCatalog, wanted: string | null | undefined): string | null {
+  if (!catalog.genres.length) return null;
+  if (wanted && catalog.genres.includes(wanted)) return wanted;
+  return catalog.genreRequired ? catalog.genres[0] : null;
+}
 
 export function Discover({ onOpen }: Props) {
-  const [rows, setRows] = useState<HomeRow[] | null>(null);
-  const [typeFilter, setTypeFilter] = useState<string>("all");
-  const [selectedKey, setSelectedKey] = useState<string>("");
-  const [genre, setGenre] = useState<string>("All");
-  const [items, setItems] = useState<MetaPreview[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [nextSkip, setNextSkip] = useState<number | null>(null);
-  const busy = useRef(false);
+  const [catalogs, setCatalogs] = useState<DiscoverCatalog[] | null>(null);
+  const [group, setGroup] = useState<Group>("movie");
+  const [failed, setFailed] = useState<string | null>(null);
+  const [key, setKey] = useState<string | null>(null);
+  const [genre, setGenre] = useState<string | null>(null);
+  const [feed, setFeed] = useState<Feed>(FRESH);
+  // The selection a page belongs to: an answer for an older selection is dropped.
+  const current = useRef("");
 
   useEffect(() => {
-    let cancelled = false;
-    api.homeRows().then(
-      (v) => {
-        if (cancelled) return;
-        const catalogs = v.rows.filter((r) => !r.collection);
-        setRows(catalogs);
-        if (catalogs.length > 0) setSelectedKey(catalogs[0].key);
+    let alive = true;
+    api.discoverCatalogs().then(
+      (list) => {
+        if (!alive) return;
+        const usable = list.filter((c) => groupOf(c) !== null);
+        setCatalogs(usable);
+        const saved = loadSelection();
+        const first = usable.find((c) => c.key === saved.key) ?? usable.find((c) => groupOf(c) === "movie") ?? usable[0];
+        if (first) {
+          setGroup(groupOf(first)!);
+          setKey(first.key);
+          setGenre(genreFor(first, saved.genre));
+        }
       },
-      (e) => !cancelled && setError(errorText(e)),
+      (e) => alive && setFailed(errorText(e)),
     );
-    return () => { cancelled = true; };
+    return () => {
+      alive = false;
+    };
   }, []);
 
-  const types = useMemo(() => {
-    if (!rows) return [];
-    const set = new Set<string>();
-    for (const r of rows) set.add(r.contentType.toLowerCase());
-    return Array.from(set);
-  }, [rows]);
+  const catalog = catalogs?.find((c) => c.key === key) ?? null;
+  const ofGroup = catalogs?.filter((c) => groupOf(c) === group) ?? [];
+  const shown = catalog && groupOf(catalog) === group ? catalog : null;
 
-  const filteredRows = useMemo(() => {
-    if (!rows) return [];
-    if (typeFilter === "all") return rows;
-    return rows.filter((r) => r.contentType.toLowerCase() === typeFilter);
-  }, [rows, typeFilter]);
-
-  useEffect(() => {
-    if (!filteredRows.length) return;
-    if (!filteredRows.some((r) => r.key === selectedKey)) {
-      setSelectedKey(filteredRows[0].key);
+  const load = useCallback(async (cat: DiscoverCatalog, g: string | null, skip: number | null) => {
+    const id = `${cat.key}#${g ?? ""}`;
+    setFeed((f) => ({ ...(skip === null ? FRESH : f), loading: true, error: null }));
+    try {
+      const page = await api.catalogPage(cat.key, skip, g);
+      if (current.current !== id) return;
+      setFeed((f) => {
+        const base = skip === null ? [] : f.items;
+        const seen = new Set(base.map((i) => `${i.contentType}:${i.id}`));
+        const added = page.items.filter((i) => !seen.has(`${i.contentType}:${i.id}`));
+        const duplicates = skip !== null && added.length === 0 ? f.duplicates + 1 : 0;
+        const more = (cat.supportsPagination || page.rawItemCount >= 100) && page.items.length > 0 && duplicates < MAX_DUPLICATE_PAGES;
+        return { items: [...base, ...added], next: more ? page.nextSkip : null, loading: false, error: null, duplicates };
+      });
+    } catch (e) {
+      if (current.current !== id) return;
+      setFeed((f) => ({ ...f, loading: false, next: null, error: errorText(e) }));
     }
-  }, [filteredRows, selectedKey]);
-
-  const activeRow = useMemo(
-    () => filteredRows.find((r) => r.key === selectedKey) ?? null,
-    [filteredRows, selectedKey],
-  );
-
-  const load = useCallback(
-    async (row: HomeRow, skip: number | null, activeGenre: string) => {
-      if (busy.current) return;
-      busy.current = true;
-      setLoading(true);
-      try {
-        const page = await api.catalogPage(row.key, skip, activeGenre === "All" ? null : activeGenre);
-        setItems((prev) => {
-          if (skip === null) return page.items;
-          const seen = new Set(prev.map((i) => `${i.contentType}/${i.id}`));
-          return [...prev, ...page.items.filter((i) => !seen.has(`${i.contentType}/${i.id}`))];
-        });
-        setNextSkip(row.supportsPagination && page.items.length > 0 ? page.nextSkip : null);
-        setError(null);
-      } catch (e) {
-        if (skip === null) setError(errorText(e));
-      } finally {
-        busy.current = false;
-        setLoading(false);
-      }
-    },
-    [],
-  );
+  }, []);
 
   useEffect(() => {
-    if (!activeRow) return;
-    setItems([]);
-    setNextSkip(null);
-    setError(null);
-    void load(activeRow, null, genre);
-  }, [activeRow, genre, load]);
+    if (!catalog || groupOf(catalog) !== group) return;
+    current.current = `${catalog.key}#${genre ?? ""}`;
+    saveSelection(catalog.key, genre);
+    void load(catalog, genre, null);
+  }, [catalog, genre, group, load]);
 
-  if (!rows && !error) return <div className="screen-message">Loading catalogs…</div>;
+  const loadMore = () => {
+    if (shown && !feed.loading && feed.next !== null && !feed.error) void load(shown, genre, feed.next);
+  };
+  const sentinel = useWhenVisible<HTMLDivElement>(loadMore, [feed.items.length, feed.loading, key, genre], "700px");
+
+  const pick = (next: DiscoverCatalog | undefined) => {
+    if (!next) return;
+    setKey(next.key);
+    setGenre(genreFor(next, genre));
+  };
+  const chooseGroup = (g: Group) => {
+    if (g === group) return;
+    setGroup(g);
+    pick(catalogs?.find((c) => groupOf(c) === g));
+  };
 
   return (
-    <div className="discover-screen" data-testid="discover">
-      <header className="discover-head">
-        <h1>Discover</h1>
-        <div className="discover-controls">
-          <div className="discover-types" role="tablist">
-            <button className={`chip ${typeFilter === "all" ? "active" : ""}`} onClick={() => setTypeFilter("all")}>All</button>
-            {types.map((tp) => (
-              <button key={tp} className={`chip ${typeFilter === tp ? "active" : ""}`} onClick={() => setTypeFilter(tp)}>
-                {tp === "movie" ? "Movies" : tp === "series" ? "Series" : tp.charAt(0).toUpperCase() + tp.slice(1)}
-              </button>
-            ))}
-          </div>
-          {filteredRows.length > 0 && (
-            <select
-              className="discover-select"
-              aria-label="Catalog"
-              value={selectedKey}
-              onChange={(e) => setSelectedKey(e.target.value)}
-            >
-              {filteredRows.map((r) => (
-                <option key={r.key} value={r.key}>
-                  {localizeCatalogTitle(r.title)} · {addonLabel(r.addonName)}
-                </option>
+    <div className="discover" data-testid="discover">
+      <header className="discover-header">
+        <h1>{t("Descobrir")}</h1>
+        {catalogs && catalogs.length > 0 && (
+          <div className="discover-filters">
+            <div className="discover-types" role="tablist" aria-label={t("Tipo")}>
+              {GROUPS.map((g) => (
+                <button
+                  key={g.id}
+                  role="tab"
+                  aria-selected={g.id === group}
+                  className={`chip ${g.id === group ? "active" : ""}`}
+                  data-type={g.id}
+                  onClick={() => chooseGroup(g.id)}
+                >
+                  {t(g.label)}
+                </button>
               ))}
-            </select>
-          )}
-        </div>
-        <div className="discover-genres">
-          {GENRES.map((g) => (
-            <button key={g} className={`chip ${genre === g ? "active" : ""}`} onClick={() => setGenre(g)}>
-              {g}
-            </button>
-          ))}
-        </div>
+            </div>
+            {shown && (
+            <label className="discover-field">
+              <span>{t("Catálogo")}</span>
+              <select className="select pill-select" value={shown.key} onChange={(e) => pick(catalogs.find((c) => c.key === e.target.value))} data-testid="discover-catalog">
+                {ofGroup.map((c) => (
+                  <option key={c.key} value={c.key}>
+                    {localizeCatalogTitle(c.name)}
+                  </option>
+                ))}
+              </select>
+            </label>
+            )}
+            {shown && shown.genres.length > 0 && (
+              <label className="discover-field">
+                <span>{t("Gênero")}</span>
+                <select className="select pill-select" value={genre ?? ""} onChange={(e) => setGenre(e.target.value || null)} data-testid="discover-genre">
+                  {!shown.genreRequired && <option value="">{t("Todos")}</option>}
+                  {shown.genres.map((g) => (
+                    <option key={g} value={g}>
+                      {g}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            )}
+          </div>
+        )}
+        {shown && <div className="muted small discover-context">{shown.addonName} · {t(shown.typeLabel)}</div>}
       </header>
 
-      {error && <div className="row-error">{error}</div>}
-
-      <div className="poster-grid">
-        {items.map((item) => (
-          <PosterCard key={`${item.contentType}/${item.id}`} item={item} onOpen={onOpen} />
-        ))}
-        {loading && items.length === 0 && Array.from({ length: 12 }, (_, i) => <div key={i} className="card skeleton" />)}
-      </div>
-
-      {!loading && items.length === 0 && !error && (
-        <div className="screen-message">No titles matched this filter. Try switching genre to "All" or another catalog.</div>
+      {failed && <div className="screen-message">{t("Não foi possível carregar os catálogos ({error}).", { error: failed })}</div>}
+      {!failed && catalogs === null && (
+        <div className="grid discover-grid">{Array.from({ length: 12 }, (_, i) => <div key={i} className="card skeleton" />)}</div>
+      )}
+      {catalogs && catalogs.length === 0 && (
+        <div className="screen-message">{t("Nenhum addon instalado tem catálogos para descobrir.")}</div>
       )}
 
-      {activeRow && nextSkip !== null && (
-        <div className="catalog-grid-more">
-          <button className="chip" disabled={loading} onClick={() => void load(activeRow, nextSkip, genre)}>
-            {loading ? "Loading…" : "Load more"}
-          </button>
+      {catalogs && catalogs.length > 0 && ofGroup.length === 0 && (
+        <div className="screen-message" data-testid="discover-empty-group">
+          {t(group === "anime" ? "Nenhum addon instalado tem catálogos de anime." : group === "series" ? "Nenhum addon instalado tem catálogos de séries." : "Nenhum addon instalado tem catálogos de filmes.")}
         </div>
+      )}
+
+      {shown && (
+        <>
+          <div className="grid discover-grid">
+            {feed.items.map((item) => <PosterCard key={`${item.contentType}/${item.id}`} item={item} onOpen={onOpen} />)}
+            {feed.loading && feed.items.length === 0 && Array.from({ length: 12 }, (_, i) => <div key={i} className="card skeleton" />)}
+          </div>
+          {!feed.loading && feed.items.length === 0 && (
+            <div className="screen-message">
+              {feed.error ? t("Não foi possível carregar este catálogo ({error}).", { error: feed.error }) : t("Nenhum título neste catálogo.")}
+            </div>
+          )}
+          {feed.loading && feed.items.length > 0 && <div className="discover-more"><span className="spinner" aria-label={t("Carregando")} /></div>}
+          <div ref={sentinel} className="grid-sentinel" />
+        </>
       )}
     </div>
   );

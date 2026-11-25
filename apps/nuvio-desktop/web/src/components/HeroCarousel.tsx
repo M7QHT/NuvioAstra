@@ -62,6 +62,7 @@ export function HeroCarousel({ items, onOpen }: Props) {
         <div
           key={`${item.contentType}/${item.id}`}
           className={`hero-slide ${i === index ? "active" : ""}`}
+          data-type={item.contentType}
           style={near(i) && art(item) ? { backgroundImage: `url("${art(item)}")` } : undefined}
           aria-hidden={i !== index}
         >

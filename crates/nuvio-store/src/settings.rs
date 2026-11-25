@@ -203,6 +203,15 @@ pub struct ProfileSettings {
     pub home: HomeCatalogSettings,
     pub p2p: P2pSettings,
     pub debrid: DebridSettings,
+    pub search: SearchSettings,
+}
+
+/// Search (Astra only, kept on this computer): addons left out of the search, by
+/// `services::search::addon_key`. Empty: every addon with a search catalog is asked.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Default)]
+#[serde(rename_all = "camelCase", default)]
+pub struct SearchSettings {
+    pub disabled_addons: Vec<String>,
 }
 
 /// TorBox (the key itself is kept apart, encrypted). `enabled`: "Resolver links reproduzíveis".
@@ -470,6 +479,7 @@ impl LegacyStore {
             player: self.player_settings(profile_index)?,
             home: self.home_catalog_settings(profile_index)?.unwrap_or_default(),
             debrid: DebridSettings::default(),
+            search: SearchSettings::default(),
             // P2P starts off in Astra: the notice is accepted again here.
             p2p: P2pSettings::default(),
         }
