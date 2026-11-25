@@ -1586,6 +1586,10 @@ html[dir="rtl"] .nav-sub-list { margin: 2px 23px 8px 0; }
 .shell {
   flex-direction: column;
 }
+.content {
+  min-height: 0;
+  width: 100%;
+}
 .sidebar,
 html[dir="rtl"] .sidebar {
   position: fixed;
