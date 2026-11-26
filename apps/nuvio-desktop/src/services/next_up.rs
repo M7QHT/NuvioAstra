@@ -27,9 +27,14 @@ impl Lists {
 
     /// Asks the addons for the lists that are missing or old. A failure keeps what was known.
     pub async fn refresh(&self, client: &AddonClient, manifests: &[AddonManifest], profile: i64, seeds: &[Seed]) {
-        let wanted: Vec<Key> = seeds
+        let targets: Vec<(String, String)> = seeds.iter().map(|s| (s.meta_type.clone(), s.meta_id.clone())).collect();
+        self.refresh_targets(client, manifests, profile, &targets).await;
+    }
+
+    async fn refresh_targets(&self, client: &AddonClient, manifests: &[AddonManifest], profile: i64, targets: &[(String, String)]) {
+        let wanted: Vec<Key> = targets
             .iter()
-            .map(|s| (profile, s.meta_type.clone(), s.meta_id.clone()))
+            .map(|(t, id)| (profile, t.clone(), id.clone()))
             .filter(|key| !self.known(key).is_some_and(|(fresh, _)| fresh))
             .collect();
         for batch in wanted.chunks(CONCURRENCY) {
@@ -47,6 +52,18 @@ impl Lists {
                 }
             }
         }
+    }
+
+    /// Fetches (using cached entries when fresh) metadata for `(content_type, id)` pairs.
+    pub async fn fetch_many(&self, client: &AddonClient, manifests: &[AddonManifest], profile: i64, targets: &[(String, String)]) -> Vec<(String, String, Arc<MetaDetails>)> {
+        self.refresh_targets(client, manifests, profile, targets).await;
+        targets
+            .iter()
+            .filter_map(|(t, id)| {
+                let (_, meta) = self.known(&(profile, t.clone(), id.clone()))?;
+                Some((t.clone(), id.clone(), meta))
+            })
+            .collect()
     }
 
     /// The cards of the series whose list is known.

@@ -44,6 +44,16 @@ export const LibraryLine = () => (
   </Svg>
 );
 
+export const CalendarLine = () => (
+  <Svg>
+    <rect x="3.5" y="5" width="17" height="15.5" rx="2.5" />
+    <path d="M8 3v4M16 3v4M3.5 9.5h17" />
+    <circle cx="8.5" cy="14" r="1" fill="currentColor" stroke="none" />
+    <circle cx="12" cy="14" r="1" fill="currentColor" stroke="none" />
+    <circle cx="15.5" cy="14" r="1" fill="currentColor" stroke="none" />
+  </Svg>
+);
+
 export const SettingsLine = () => (
   <Svg>
     <circle cx="12" cy="12" r="3" />

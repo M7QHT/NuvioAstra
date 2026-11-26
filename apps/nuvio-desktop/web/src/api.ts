@@ -18,6 +18,7 @@ import type {
   AccountStatus, AvatarItem, PinResult, SyncPreview, PlaybackItem, PlayerCommand, ProfilesView, PlayerInfo, PlayerSnapshot, ProfileSettings, SearchSection, SettingsView, StreamGroup, SearchAddon, DiscoverCatalog,
   TitleProgress,
   WatchedItemInput,
+  CalendarView,
 } from "./types";
 
 // Session caches: the same catalog page or title is asked to the addons once, so scrolling back,
@@ -170,6 +171,7 @@ export const api = {
   libraryContinueWatching: () => invoke<HistoryEntry[]>("library_continue_watching"),
   /** The row completed with next episodes (asks the addons for the episode lists it lacks). */
   libraryNextUp: () => invoke<HistoryEntry[]>("library_next_up"),
+  libraryCalendar: (pastDays = 30, futureDays = 60) => invoke<CalendarView>("library_calendar", { pastDays, futureDays }),
   libraryHistory: (offset: number, limit: number) => invoke<HistoryPage>("library_history", { offset, limit }),
   libraryRemoveHistory: (key: string) => invoke<boolean>("library_remove_history", { key }),
   librarySetWatched: (item: WatchedItemInput, watched: boolean) => invoke<boolean>("library_set_watched", { item: { markedAtEpochMs: 0, ...item }, watched }),

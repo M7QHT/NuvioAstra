@@ -2,6 +2,7 @@
 //! No UI code and no Tauri commands here (those live in `api.rs`).
 
 pub mod addons;
+pub mod calendar;
 pub mod collections;
 pub mod enrich;
 pub mod epg;

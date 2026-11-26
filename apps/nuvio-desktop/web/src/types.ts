@@ -321,3 +321,25 @@ export interface UpdateProgress { phase: "downloading" | "verifying" | "installi
 /** Program guide of a live channel (times in UTC ms). */
 export interface EpgProgram { startMs: number; endMs: number; title: string; description: string | null }
 export interface EpgView { nowMs: number; programs: EpgProgram[]; hasSchedule: boolean }
+
+/** Release calendar (services::calendar). */
+export interface CalendarEpisode {
+  metaId: string;
+  metaType: string;
+  seriesName: string;
+  poster: string | null;
+  videoId: string;
+  season: number;
+  episode: number;
+  episodeTitle: string;
+  thumbnail: string | null;
+  overview: string | null;
+  airDate: string;
+  daysFromToday: number;
+  watched: boolean;
+}
+export interface CalendarView {
+  today: string;
+  trackedSeries: number;
+  episodes: CalendarEpisode[];
+}

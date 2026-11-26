@@ -541,6 +541,7 @@ fn main() {
             watching::player_subtitle_style,
             watching::player_moments,
             api::library_next_up,
+            api::library_calendar,
             pip::player_picture_in_picture,
             pip::pip_ready,
             pip::pip_drag,

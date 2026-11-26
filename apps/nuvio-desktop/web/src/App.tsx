@@ -24,8 +24,9 @@ import { resumeTarget } from "./library";
 import { LiveTv } from "./screens/LiveTv";
 import { Search } from "./screens/Search";
 import { Discover } from "./screens/Discover";
+import { Calendar } from "./screens/Calendar";
 import { Settings } from "./screens/Settings";
-import { metaRef, type Bootstrap, type CollectionView, type FolderView, type HistoryEntry, type MetaPreview, type MetaRef, type ProfilesView } from "./types";
+import { metaRef, type Bootstrap, type CalendarEpisode, type CollectionView, type FolderView, type HistoryEntry, type MetaPreview, type MetaRef, type ProfilesView } from "./types";
 import { t } from "./i18n";
 
 
@@ -209,6 +210,15 @@ export function App() {
     setOpenError(null);
     setDetails({ contentType: entry.metaType, id: entry.metaId, name: entry.title });
   }, []);
+  const openCalendarEpisode = useCallback((ep: CalendarEpisode) => {
+    setOpenError(null);
+    setDetails({
+      contentType: ep.metaType,
+      id: ep.metaId,
+      name: ep.seriesName,
+      resume: { videoId: ep.videoId, season: ep.season, episode: ep.episode },
+    });
+  }, []);
 
   const toasts = useToasts();
   const full = player.session?.view === "full";
@@ -262,6 +272,7 @@ export function App() {
           )}
           {tab === "search" && <div className="screen" hidden={details !== null}><Search key={dataKey} onOpen={open} /></div>}
           {tab === "discover" && <div className="screen" hidden={details !== null}><Discover key={dataKey} onOpen={open} /></div>}
+          {tab === "calendar" && <div className="screen" hidden={details !== null}><Calendar key={dataKey} onOpenEpisode={openCalendarEpisode} /></div>}
           {tab === "tv" && <div className="screen screen-fill"><LiveTv key={dataKey} /></div>}
           {tab === "library" && <div className="screen" hidden={details !== null}><Library key={profileEpoch} onOpen={open} onResume={resume} onOpenEntry={openEntry} /></div>}
           {tab === "settings" && <div className="screen screen-fill" hidden={details !== null}><Settings key={profileEpoch} /></div>}

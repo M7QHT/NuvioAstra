@@ -400,6 +400,30 @@ pub async fn library_next_up(state: State<'_, AppState>) -> Result<Vec<library::
     continue_watching(&state, profile)
 }
 
+/// Upcoming and recently aired episodes across tracked series/anime in the active profile.
+#[tauri::command]
+pub async fn library_calendar(
+    state: State<'_, AppState>,
+    past_days: Option<i64>,
+    future_days: Option<i64>,
+) -> Result<crate::services::calendar::CalendarView, String> {
+    state.ensure_unlocked()?;
+    let profile = state.active_profile();
+    let favorites = state.app_store.favorites(profile).map_err(|e| e.to_string())?;
+    let progress = state.app_store.progress(profile).map_err(|e| e.to_string())?;
+    let watched = state.app_store.watched(profile).map_err(|e| e.to_string())?;
+    let targets = crate::services::calendar::tracked_series(&favorites, &progress, &watched);
+    let metas = if targets.is_empty() {
+        Vec::new()
+    } else {
+        let loaded = state.addons.loaded().await?;
+        state.next_up.fetch_many(&state.addons.client, &loaded.manifests, profile, &targets).await
+    };
+    let past = past_days.unwrap_or(30).clamp(0, 365);
+    let future = future_days.unwrap_or(60).clamp(0, 365);
+    Ok(crate::services::calendar::build_calendar(&metas, &progress, &watched, library::now_ms(), past, future))
+}
+
 #[derive(Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct HistoryPage {

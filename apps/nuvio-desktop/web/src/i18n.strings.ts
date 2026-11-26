@@ -1155,4 +1155,22 @@ export const STRINGS: Record<string, { en: string; ar: string }> = {
   "Sobre o app": { en: "About the app", ar: "حول التطبيق" },
   "Ver todos": { en: "See all", ar: "عرض الكل" },
   "Ver todos de {title}": { en: "See all of {title}", ar: "عرض كل {title}" },
+  // Release calendar
+  "Calendário": { en: "Calendar", ar: "التقويم" },
+  "Próximos": { en: "Upcoming", ar: "القادمة" },
+  "Mês": { en: "Month", ar: "الشهر" },
+  "Recentes": { en: "Recent", ar: "الحديثة" },
+  "Não assistidos": { en: "Unwatched only", ar: "غير المشاهَدة فقط" },
+  "Atualizar": { en: "Refresh", ar: "تحديث" },
+  "Hoje": { en: "Today", ar: "اليوم" },
+  "Amanhã": { en: "Tomorrow", ar: "غدًا" },
+  "Ontem": { en: "Yesterday", ar: "أمس" },
+  "Em {days}d": { en: "In {days}d", ar: "بعد {days} يوم" },
+  "Há {days}d": { en: "{days}d ago", ar: "منذ {days} يوم" },
+  "{count} séries acompanhadas": { en: "{count} tracked series", ar: "{count} مسلسل مُتابَع" },
+  "Nenhum episódio encontrado neste período.": { en: "No episodes found in this range.", ar: "لم يُعثر على حلقات في هذه الفترة." },
+  "Salve séries nos favoritos ou assista a um episódio para ver os próximos lançamentos aqui.": {
+    en: "Save series to favorites or watch an episode to see upcoming releases here.",
+    ar: "أضف مسلسلات إلى المفضلة أو شاهد حلقة لعرض مواعيد الحلقات الجديدة هنا.",
+  },
 };
