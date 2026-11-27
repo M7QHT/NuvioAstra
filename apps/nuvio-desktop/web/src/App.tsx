@@ -9,6 +9,7 @@ import { LockScreen } from "./screens/LockScreen";
 import { Welcome } from "./screens/Welcome";
 import { startAppLanguage } from "./appLanguage";
 import { startCardStyle } from "./cardStyle";
+import { loadUiScale, startUiScale } from "./uiScale";
 import { useToasts } from "./toast";
 import { PinDialog } from "./components/PinDialog";
 import { ProfileMenu, ProfilesDialog } from "./components/ProfileMenu";
@@ -63,6 +64,7 @@ export function App() {
     api.welcomeNeeded().then((needed) => setWelcome(needed ? "waiting" : "none"), () => setWelcome("none"));
     startAccount();
     startCardStyle();
+    startUiScale();
     startAppLanguage();
     // The event listeners just registered must hear the first sync.
     const ready = window.setTimeout(() => void api.appReady().catch(() => {}), 200);
@@ -105,6 +107,7 @@ export function App() {
           setFolder(null);
           setOpenError(null);
           setBoot(null);
+          loadUiScale();
           api.profilesList().then(setProfiles, () => {});
         } else {
           setAddonsEpoch((e) => e + 1);
@@ -277,7 +280,7 @@ export function App() {
           {tab === "library" && <div className="screen" hidden={details !== null}><Library key={profileEpoch} onOpen={open} onResume={resume} onOpenEntry={openEntry} /></div>}
           {tab === "settings" && <div className="screen screen-fill" hidden={details !== null}><Settings key={profileEpoch} /></div>}
           {details && (
-            <div className="screen">
+            <div className="screen details-screen">
               <Details key={`${details.contentType}/${details.id}/${details.resume?.videoId ?? ""}`} item={details} onBack={() => setDetails(null)} />
             </div>
           )}

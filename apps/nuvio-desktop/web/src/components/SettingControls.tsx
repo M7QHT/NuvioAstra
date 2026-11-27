@@ -23,10 +23,10 @@ export function Toggle({ checked, onChange, label }: { checked: boolean; onChang
   );
 }
 
-export function Slider({ value, min, max, onChange, unit, label }: { value: number; min: number; max: number; onChange(v: number): void; unit?: string; label: string }) {
+export function Slider({ value, min, max, step = 1, onChange, unit, label }: { value: number; min: number; max: number; step?: number; onChange(v: number): void; unit?: string; label: string }) {
   return (
     <span className="slider">
-      <input type="range" min={min} max={max} value={value} aria-label={label} onChange={(e) => onChange(Number(e.target.value))} />
+      <input type="range" min={min} max={max} step={step} value={value} aria-label={label} onChange={(e) => onChange(Number(e.target.value))} />
       <output>{value}{unit}</output>
     </span>
   );

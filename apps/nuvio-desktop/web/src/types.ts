@@ -97,6 +97,8 @@ export interface PlayerSettings {
   appLanguage?: string | null;
   blurUnwatchedEpisodes: boolean;
   autoFallbackSource: boolean;
+  uiScale?: number;
+  uiScaleDetails?: boolean;
 }
 export interface HomeCatalogPreference { key: string; customTitle: string; enabled: boolean; heroSourceEnabled: boolean; order: number }
 export interface HomeCatalogSettings { heroEnabled: boolean; showCatalogType: boolean; hideUnreleasedContent: boolean; items: HomeCatalogPreference[]; heroCatalogs: string[] | null }

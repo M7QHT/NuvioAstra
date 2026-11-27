@@ -161,10 +161,15 @@ pub struct PlayerSettings {
     pub blur_unwatched_episodes: bool,
     /// Astra only: automatically try the next playable source if playback fails to open.
     pub auto_fallback_source: bool,
+    /// Astra only: global interface zoom percentage (75–150, default 100).
+    pub ui_scale: i64,
+    /// Astra only: whether `ui_scale` also scales the media Details screen.
+    pub ui_scale_details: bool,
 }
 
 /// Interface languages Astra has (codes of the original's `AppLanguage`).
 pub const APP_LANGUAGES: &[&str] = &["pt-BR", "en", "ar"];
+pub const UI_SCALE_RANGE: (i64, i64) = (75, 150);
 
 impl Default for PlayerSettings {
     /// `PlayerSettingsUiState()` defaults.
@@ -192,6 +197,8 @@ impl Default for PlayerSettings {
             app_language: None,
             blur_unwatched_episodes: false,
             auto_fallback_source: true,
+            ui_scale: 100,
+            ui_scale_details: true,
         }
     }
 }
@@ -370,6 +377,7 @@ impl PlayerSettings {
             s.align = ds.align.clone();
         }
         self.picture = self.picture.sanitized();
+        self.ui_scale = self.ui_scale.clamp(UI_SCALE_RANGE.0, UI_SCALE_RANGE.1);
         self.auto_skip_segments.retain(|kind| AUTO_SKIP_SEGMENTS.contains(&kind.as_str()));
         self.auto_skip_segments.sort();
         self.auto_skip_segments.dedup();
@@ -456,6 +464,8 @@ impl LegacyStore {
             app_language: None,
             blur_unwatched_episodes: d.blur_unwatched_episodes,
             auto_fallback_source: d.auto_fallback_source,
+            ui_scale: d.ui_scale,
+            ui_scale_details: d.ui_scale_details,
         }
         .sanitized())
     }

@@ -1173,4 +1173,10 @@ export const STRINGS: Record<string, { en: string; ar: string }> = {
     en: "Save series to favorites or watch an episode to see upcoming releases here.",
     ar: "أضف مسلسلات إلى المفضلة أو شاهد حلقة لعرض مواعيد الحلقات الجديدة هنا.",
   },
+  "Exibição": { en: "Display", ar: "العرض" },
+  "Escala da interface": { en: "App UI Scale", ar: "مقياس واجهة التطبيق" },
+  "Ajuste o tamanho geral dos menus, ícones e cartões.": { en: "Adjust the overall size of menus, icons, and cards.", ar: "اضبط الحجم العام للقوائم والأيقونات والبطاقات." },
+  "Redefinir": { en: "Reset", ar: "إعادة ضبط" },
+  "Aplicar também à tela de detalhes": { en: "Also Apply to Details Screen", ar: "تطبيق على شاشة التفاصيل أيضًا" },
+  "Dimensiona os detalhes do título junto com o restante do app.": { en: "Scale media details with the rest of the app.", ar: "تكبير وتصغير شاشة تفاصيل العمل مع بقية التطبيق." },
 };

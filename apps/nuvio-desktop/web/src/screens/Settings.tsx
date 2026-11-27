@@ -16,12 +16,13 @@ import { Avatar } from "../components/ProfileMenu";
 import { LANGUAGES, languageLabel } from "../languages";
 import { P2P_CONSENT_TEXT, megabytes } from "../components/TorrentStart";
 import { ANIME_MODES, ENHANCEMENTS, MOTIONS } from "../player/EnhanceMenu";
-import { Row, Toggle } from "../components/SettingControls";
+import { Row, Slider, Toggle } from "../components/SettingControls";
 import { SubtitleAppearance } from "../components/SubtitleAppearance";
 import { HeroCatalogs } from "../components/HeroCatalogs";
 import { WatchingSettings } from "../components/WatchingSettings";
 import { DownloadsSection, TorboxSection } from "../components/ServiceSettings";
 import { applyCardStyle, CARD_RADII, CARD_WIDTHS } from "../cardStyle";
+import { applyUiScale, UI_SCALE_DEFAULT, UI_SCALE_MAX, UI_SCALE_MIN } from "../uiScale";
 import { refreshLibraryViews } from "../library";
 import type { CatalogChoice, P2pCacheName, P2pProfileName, P2pSettings, PlayerSettings, ProfileSettings, AnimeModeName, EnhancementName, MotionName, ResizeModeName, SettingsView, SubtitleSettings } from "../types";
 import { LANGUAGES_UI, addonLabel, localizeCatalogTitle, locale, t, useLang, type Lang } from "../i18n";
@@ -595,8 +596,52 @@ function HomeSection({ settings, catalogs, update }: {
     saveCatalogs(next, undefined, 0);
   };
 
+  const uiScale = settings.player.uiScale ?? UI_SCALE_DEFAULT;
+  const uiScaleDetails = settings.player.uiScaleDetails ?? true;
+
   return (
     <>
+      <h2 className="settings-subtitle">{t("Exibição")}</h2>
+      <div className="settings-group">
+        <Row title={t("Escala da interface")} description={t("Ajuste o tamanho geral dos menus, ícones e cartões.")}>
+          <div className="ui-scale-control">
+            <Slider
+              label={t("Escala da interface")}
+              value={uiScale}
+              min={UI_SCALE_MIN}
+              max={UI_SCALE_MAX}
+              step={5}
+              unit="%"
+              onChange={(v) => {
+                applyUiScale(v, uiScaleDetails);
+                update((s) => ({ ...s, player: { ...s.player, uiScale: v } }), undefined, 200);
+              }}
+            />
+            {uiScale !== UI_SCALE_DEFAULT && (
+              <button
+                type="button"
+                className="ghost-btn ui-scale-reset"
+                onClick={() => {
+                  applyUiScale(UI_SCALE_DEFAULT, uiScaleDetails);
+                  update((s) => ({ ...s, player: { ...s.player, uiScale: UI_SCALE_DEFAULT } }), undefined, 0);
+                }}
+              >
+                {t("Redefinir")}
+              </button>
+            )}
+          </div>
+        </Row>
+        <Row title={t("Aplicar também à tela de detalhes")} description={t("Dimensiona os detalhes do título junto com o restante do app.")}>
+          <Toggle
+            label={t("Aplicar também à tela de detalhes")}
+            checked={uiScaleDetails}
+            onChange={(v) => {
+              applyUiScale(uiScale, v);
+              update((s) => ({ ...s, player: { ...s.player, uiScaleDetails: v } }), undefined, 0);
+            }}
+          />
+        </Row>
+      </div>
       <div className="settings-group">
         <Row title={t("Destaque no topo")} description={t("Mostra o título em destaque no início da tela.")}>
           <Toggle label={t("Destaque no topo")} checked={home.heroEnabled} onChange={(v) => update((s) => ({ ...s, home: { ...s.home, heroEnabled: v } }), note)} />
