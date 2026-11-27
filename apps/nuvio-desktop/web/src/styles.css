@@ -1957,34 +1957,34 @@ html[dir="rtl"] .cal-watched-pill {
   --radius: 13px;
 }
 
-/* Ultra-compact icon-only floating top island */
+/* Compact icon-only floating top island */
 .sidebar,
 html[dir="rtl"] .sidebar {
-  top: 14px;
-  height: 44px;
-  padding: 4px 8px;
-  gap: 2px;
-  background: rgba(16, 20, 29, 0.72);
+  top: 16px;
+  height: 54px;
+  padding: 6px 12px;
+  gap: 6px;
+  background: rgba(16, 20, 29, 0.74);
   backdrop-filter: blur(22px) saturate(1.5);
   -webkit-backdrop-filter: blur(22px) saturate(1.5);
-  border: 1px solid rgba(255, 255, 255, 0.11);
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.55), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  box-shadow: 0 12px 34px rgba(0, 0, 0, 0.55), inset 0 1px 0 rgba(255, 255, 255, 0.08);
 }
 .sidebar:hover {
-  background: rgba(18, 23, 34, 0.86);
+  background: rgba(18, 23, 34, 0.88);
 }
 .sidebar .brand,
 .sidebar .nav-label {
   display: none;
 }
 .sidebar ul {
-  gap: 2px;
+  gap: 6px;
 }
 .sidebar .nav-item {
-  padding: 7px 10px;
+  padding: 9px 14px;
   gap: 0;
   border-radius: 999px;
-  color: rgba(255, 255, 255, 0.66);
+  color: rgba(255, 255, 255, 0.68);
 }
 .sidebar .nav-item:hover {
   background: rgba(255, 255, 255, 0.08);
@@ -1993,35 +1993,47 @@ html[dir="rtl"] .sidebar {
 .sidebar .nav-item.active {
   background: rgba(61, 145, 255, 0.18);
   color: #56a8ff;
-  box-shadow: inset 0 0 0 1px rgba(86, 168, 255, 0.32);
+  box-shadow: inset 0 0 0 1px rgba(86, 168, 255, 0.34);
 }
 .sidebar .nav-icon,
 .sidebar .nav-icon > svg {
-  width: 18px;
-  height: 18px;
+  width: 22px;
+  height: 22px;
 }
 .sidebar .sidebar-divider {
-  height: 18px;
-  margin: 0 3px;
+  height: 24px;
+  margin: 0 6px;
   background: rgba(255, 255, 255, 0.14);
 }
 .sidebar .profile-chip {
-  padding: 2px;
+  padding: 3px;
   gap: 0;
 }
 .sidebar .profile-ring {
-  width: 28px;
-  height: 28px;
+  width: 34px;
+  height: 34px;
   padding: 2px;
 }
 .sidebar .profile-ring .avatar {
-  width: 24px;
-  height: 24px;
-  font-size: 11px;
+  width: 30px;
+  height: 30px;
+  font-size: 13px;
   border-width: 1.5px;
 }
 .profile-menu {
-  top: 66px;
+  top: 78px;
+}
+.search,
+.discover,
+.calendar,
+.library,
+.settings-page,
+.details-body,
+.folder,
+.catalog-grid-screen,
+.livetv,
+.screen-message {
+  padding-top: 86px;
 }
 
 /* Full-bleed cinematic Hero */
