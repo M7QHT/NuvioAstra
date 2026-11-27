@@ -12,9 +12,9 @@ export type Tab = "home" | "tv" | "search" | "discover" | "calendar" | "library"
 
 const ITEMS: { tab: Tab; label: string; icon: ReactNode }[] = [
   { tab: "home", label: "Início", icon: <HomeIcon /> },
-  { tab: "tv", label: "TV", icon: <TvIcon /> },
   { tab: "search", label: "Buscar", icon: <SearchIcon /> },
   { tab: "discover", label: "Descobrir", icon: <DiscoverIcon /> },
+  { tab: "tv", label: "TV", icon: <TvIcon /> },
   { tab: "calendar", label: "Calendário", icon: <CalendarIcon /> },
   { tab: "library", label: "Biblioteca", icon: <LibraryIcon /> },
 ];

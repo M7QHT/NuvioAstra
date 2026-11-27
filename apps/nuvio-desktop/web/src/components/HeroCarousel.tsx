@@ -65,14 +65,33 @@ export function HeroCarousel({ items, onOpen }: Props) {
           data-type={item.contentType}
           style={near(i) && art(item) ? { backgroundImage: `url("${art(item)}")` } : undefined}
           aria-hidden={i !== index}
+          onClick={() => i === index && onOpen(item)}
         >
           <div className="hero-shade">
             {item.logo ? <img className="hero-logo" src={item.logo} alt={item.name} draggable={false} /> : <h1>{item.name}</h1>}
-            <div className="meta-line">
-              {[item.releaseInfo, item.imdbRating && `★ ${item.imdbRating}`, item.genres.slice(0, 3).join(" · ")].filter(Boolean).join("   ")}
-            </div>
+            {(item.genres.length > 0 || item.releaseInfo) && (
+              <div className="hero-meta-row">
+                {item.genres.length > 0 && <span>{item.genres.slice(0, 3).join(" • ")}</span>}
+                {item.releaseInfo && <span className="hero-meta-pill">{item.releaseInfo}</span>}
+              </div>
+            )}
+            {item.imdbRating && (
+              <div className="hero-ratings">
+                <span className="imdb-badge">IMDb</span>
+                <span>{item.imdbRating}</span>
+              </div>
+            )}
             {item.description && <p className="hero-desc">{item.description}</p>}
-            <button className="primary" tabIndex={i === index ? 0 : -1} onClick={() => onOpen(item)}>{t("Ver detalhes")}</button>
+            <button
+              className="primary"
+              tabIndex={i === index ? 0 : -1}
+              onClick={(e) => {
+                e.stopPropagation();
+                onOpen(item);
+              }}
+            >
+              {t("Ver detalhes")}
+            </button>
           </div>
         </div>
       ))}

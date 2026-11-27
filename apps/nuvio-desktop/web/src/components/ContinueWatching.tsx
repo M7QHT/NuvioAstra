@@ -39,10 +39,18 @@ export const ContinueCard = memo(function ContinueCard({ entry, onResume, onOpen
     };
   }, [menu]);
 
-  const image = entry.background ?? entry.poster;
+  const image = entry.poster ?? entry.background;
   const code = episodeCode(entry);
+  const shortCode = entry.season && entry.episode ? `S${entry.season} E${entry.episode}` : "";
   const left = remaining(entry);
   const fresh = entry.nextUp && !entry.inProgress;
+  const tooltipParts = [
+    fresh ? t("Próximo episódio de {title}", { title: entry.title }) : t("Continuar {title}", { title: entry.title }),
+    code && `${code}${entry.episodeTitle ? ` · ${entry.episodeTitle}` : ""}`,
+    entry.positionMs > 0 ? t("{time} assistidos", { time: clock(entry.positionMs) }) : "",
+    left ?? "",
+    lastWatched(entry.lastWatchedEpochMs),
+  ].filter(Boolean);
 
   const markWatched = async () => {
     setMenu(null);
@@ -77,26 +85,22 @@ export const ContinueCard = memo(function ContinueCard({ entry, onResume, onOpen
         }}
         data-key={entry.key}
         data-next-up={entry.nextUp || undefined}
-        title={fresh ? t("Próximo episódio de {title}", { title: entry.title }) : t("Continuar {title}", { title: entry.title })}
+        title={tooltipParts.join(" · ")}
       >
         <div className="cw-art">
           {image ? <img src={image} alt="" loading="lazy" decoding="async" draggable={false} /> : <span className="card-fallback">{entry.title}</span>}
           <span className="cw-play" aria-hidden>▶</span>
-          {entry.nextUp && <span className="cw-badge">{entry.airs ? t("Estreia em {date}", { date: airDate(entry.airs) }) : t("Próximo episódio")}</span>}
+          {entry.nextUp && <span className="cw-badge">{entry.airs ? t("Estreia em {date}", { date: airDate(entry.airs) }) : "Up next"}</span>}
           {!fresh && (
             <div className="progress" role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.round(entry.fraction * 100)}>
               <div style={{ width: `${Math.max(2, entry.fraction * 100)}%` }} />
             </div>
           )}
         </div>
-        <div className="card-title">{entry.title}</div>
-        <div className="card-sub">
-          {[code && `${code}${entry.episodeTitle ? ` · ${entry.episodeTitle}` : ""}`].filter(Boolean).join("")}
+        <div className="cw-meta-row">
+          <div className="card-title">{entry.title}</div>
+          {shortCode && <span className="cw-ep-code">{shortCode}</span>}
         </div>
-        <div className="card-sub">
-          {[entry.positionMs > 0 && t("{time} assistidos", { time: clock(entry.positionMs) }), left].filter(Boolean).join(" · ")}
-        </div>
-        <div className="card-sub">{lastWatched(entry.lastWatchedEpochMs)}</div>
       </button>
       {onRemove && (
         <button className="fav-btn icon" aria-label={t("Remover {title} de Continuar assistindo", { title: entry.title })} title={t("Remover")} data-testid="cw-remove" onClick={() => onRemove(entry)}>
