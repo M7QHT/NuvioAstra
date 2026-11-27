@@ -621,7 +621,13 @@ fn main() {
             uitest::uitest_break_display_sync
         ])
         .setup(move |app| {
-            let window = WebviewWindowBuilder::new(app, "main", WebviewUrl::App("index.html".into()))
+            let main_url = std::env::var("NUVIO_DEV_URL")
+                .ok()
+                .filter(|u| u.starts_with("http://127.0.0.1:5173") || u.starts_with("http://localhost:5173"))
+                .and_then(|u| u.parse::<tauri::Url>().ok())
+                .map(WebviewUrl::External)
+                .unwrap_or_else(|| WebviewUrl::App("index.html".into()));
+            let window = WebviewWindowBuilder::new(app, "main", main_url)
                 .title("Nuvio Astra")
                 .inner_size(1280.0, 760.0)
                 .min_inner_size(800.0, 480.0)

@@ -1,0 +1,12 @@
+{
+  "identifier": "dev-localhost",
+  "description": "Allow local Vite HMR dev server on port 5173 to use Tauri IPC when NUVIO_DEV_URL is set.",
+  "windows": ["main"],
+  "remote": {
+    "urls": [
+      "http://127.0.0.1:5173/*",
+      "http://localhost:5173/*"
+    ]
+  },
+  "permissions": ["core:default"]
+}
