@@ -53,6 +53,8 @@ export function App() {
   const [switching, setSwitching] = useState<string | null>(null);
   /** Protected profile waiting for its PIN before the switch. */
   const [pinFor, setPinFor] = useState<number | null>(null);
+  const [isFullscreen, setIsFullscreen] = useState(false);
+  const [showFsExit, setShowFsExit] = useState(false);
   // Screens are keyed by these: a profile switch remounts every screen, an addon change the ones
   // that show addon data. Module caches are dropped by `onDataEpoch` in each module.
   const [profileEpoch, setProfileEpoch] = useState(0);
@@ -70,6 +72,47 @@ export function App() {
     const ready = window.setTimeout(() => void api.appReady().catch(() => {}), 200);
     return () => window.clearTimeout(ready);
   }, []);
+
+  useEffect(() => {
+    const syncFs = () => void api.isFullscreen().then(setIsFullscreen, () => {});
+    syncFs();
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "F11") {
+        e.preventDefault();
+        api.isFullscreen().then((curr) => {
+          const next = !curr;
+          setIsFullscreen(next);
+          if (!next) setShowFsExit(false);
+          return api.setFullscreen(next);
+        }).catch(() => {});
+      }
+    };
+    const onResize = () => syncFs();
+    window.addEventListener("keydown", onKeyDown);
+    window.addEventListener("resize", onResize);
+    return () => {
+      window.removeEventListener("keydown", onKeyDown);
+      window.removeEventListener("resize", onResize);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!isFullscreen) {
+      setShowFsExit(false);
+      return;
+    }
+    const onMouseMove = (e: MouseEvent) => {
+      if (e.clientY <= 36) setShowFsExit(true);
+      else if (e.clientY > 96) setShowFsExit(false);
+    };
+    const onLeave = () => setShowFsExit(false);
+    window.addEventListener("mousemove", onMouseMove);
+    document.addEventListener("mouseleave", onLeave);
+    return () => {
+      window.removeEventListener("mousemove", onMouseMove);
+      document.removeEventListener("mouseleave", onLeave);
+    };
+  }, [isFullscreen]);
 
   // Locked or unlocked by Rust (PIN removed in Nuvio, protected profile received).
   useEffect(
@@ -287,6 +330,21 @@ export function App() {
         </main>
       </div>
       {full && <FullPlayer />}
+      {isFullscreen && !full && (
+        <button
+          type="button"
+          className={`fs-exit-btn ${showFsExit ? "visible" : ""}`}
+          aria-label={t("Sair da tela cheia")}
+          title={`${t("Sair da tela cheia")} (F11)`}
+          onClick={() => {
+            setIsFullscreen(false);
+            setShowFsExit(false);
+            void api.setFullscreen(false).catch(() => {});
+          }}
+        >
+          ✕
+        </button>
+      )}
       {toasts.length > 0 && (
         <div className="toasts" role="status" aria-live="polite">
           {toasts.map((t) => <div key={t.id} className={`toast ${t.error ? "error" : ""}`}>{t.text}</div>)}

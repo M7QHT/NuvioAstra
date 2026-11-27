@@ -2280,3 +2280,43 @@ html[dir="rtl"] .row-section {
   padding: 5px 10px;
   font-size: 12px;
 }
+
+/* ---- Fullscreen top hover exit button ---- */
+.fs-exit-btn {
+  position: fixed;
+  top: 16px;
+  right: 20px;
+  z-index: 90;
+  width: 40px;
+  height: 40px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  background: rgba(16, 20, 29, 0.86);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+  color: #ffffff;
+  font-size: 16px;
+  line-height: 1;
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  opacity: 0;
+  transform: translateY(-14px);
+  pointer-events: none;
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.55);
+  transition: opacity .18s var(--ease), transform .18s var(--ease), background .15s var(--ease), border-color .15s var(--ease);
+}
+html[dir="rtl"] .fs-exit-btn {
+  right: auto;
+  left: 20px;
+}
+.fs-exit-btn.visible,
+.fs-exit-btn:focus-visible {
+  opacity: 1;
+  transform: translateY(0);
+  pointer-events: auto;
+}
+.fs-exit-btn:hover {
+  background: rgba(235, 68, 68, 0.9);
+  border-color: rgba(255, 255, 255, 0.4);
+}

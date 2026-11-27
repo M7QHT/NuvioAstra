@@ -598,6 +598,16 @@ function HomeSection({ settings, catalogs, update }: {
 
   const uiScale = settings.player.uiScale ?? UI_SCALE_DEFAULT;
   const uiScaleDetails = settings.player.uiScaleDetails ?? true;
+  const [pendingScale, setPendingScale] = useState<number | null>(null);
+  const shownScale = pendingScale ?? uiScale;
+  const commitScale = () => {
+    if (pendingScale === null) return;
+    const next = pendingScale;
+    setPendingScale(null);
+    if (next === uiScale) return;
+    applyUiScale(next, uiScaleDetails);
+    update((s) => ({ ...s, player: { ...s.player, uiScale: next } }), undefined, 0);
+  };
 
   return (
     <>
@@ -607,21 +617,20 @@ function HomeSection({ settings, catalogs, update }: {
           <div className="ui-scale-control">
             <Slider
               label={t("Escala da interface")}
-              value={uiScale}
+              value={shownScale}
               min={UI_SCALE_MIN}
               max={UI_SCALE_MAX}
               step={5}
               unit="%"
-              onChange={(v) => {
-                applyUiScale(v, uiScaleDetails);
-                update((s) => ({ ...s, player: { ...s.player, uiScale: v } }), undefined, 200);
-              }}
+              onChange={(v) => setPendingScale(v)}
+              onCommit={commitScale}
             />
-            {uiScale !== UI_SCALE_DEFAULT && (
+            {shownScale !== UI_SCALE_DEFAULT && (
               <button
                 type="button"
                 className="ghost-btn ui-scale-reset"
                 onClick={() => {
+                  setPendingScale(null);
                   applyUiScale(UI_SCALE_DEFAULT, uiScaleDetails);
                   update((s) => ({ ...s, player: { ...s.player, uiScale: UI_SCALE_DEFAULT } }), undefined, 0);
                 }}

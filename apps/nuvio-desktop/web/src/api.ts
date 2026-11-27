@@ -224,6 +224,7 @@ export const api = {
   p2pCacheSize: () => invoke<number>("p2p_cache_size"),
   pictureInPicture: (enabled: boolean, title: string) => invoke<void>("player_picture_in_picture", { enabled, title }),
   setFullscreen: (fullscreen: boolean) => invoke<void>("window_set_fullscreen", { fullscreen }),
+  isFullscreen: () => invoke<boolean>("window_is_fullscreen"),
 };
 
 async function changed<T>(reason: "profile" | "addons", call: Promise<T>): Promise<T> {

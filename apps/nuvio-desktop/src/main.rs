@@ -322,11 +322,15 @@ fn play_url(
     Ok(info)
 }
 
-/// Shows the main window maximized the first time (called by the interface after its first paint).
+/// Shows the main window in fullscreen the first time (called by the interface after its first paint).
 fn show_main_window(window: &tauri::WebviewWindow) {
     if !window.is_visible().unwrap_or(true) {
-        let _ = window.maximize();
         let _ = window.show();
+        if selftest::requested().is_none() && uitest::requested().is_none() {
+            let _ = window.set_fullscreen(true);
+        } else {
+            let _ = window.maximize();
+        }
         let _ = window.set_focus();
     }
 }
@@ -398,7 +402,16 @@ pub fn set_picture_in_picture(app: &AppHandle, state: &AppState, enabled: bool, 
 
 #[tauri::command]
 fn window_set_fullscreen(window: tauri::WebviewWindow, fullscreen: bool) -> Result<(), String> {
-    window.set_fullscreen(fullscreen).map_err(|e| e.to_string())
+    window.set_fullscreen(fullscreen).map_err(|e| e.to_string())?;
+    if !fullscreen && selftest::requested().is_none() && uitest::requested().is_none() {
+        let _ = window.maximize();
+    }
+    Ok(())
+}
+
+#[tauri::command]
+fn window_is_fullscreen(window: tauri::WebviewWindow) -> bool {
+    window.is_fullscreen().unwrap_or(false)
 }
 
 /// Makes the webview background transparent so the video container below shows through
@@ -550,6 +563,7 @@ fn main() {
             api::subtitle_font_remove,
             api::subtitle_font_data,
             window_set_fullscreen,
+            window_is_fullscreen,
             api::app_bootstrap,
             api::home_rows,
             api::catalog_page,
