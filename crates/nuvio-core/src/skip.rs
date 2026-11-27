@@ -61,14 +61,12 @@ pub struct Chapter {
     pub title: String,
 }
 
-/// IntroDB `GET /segments`.
-pub fn parse_introdb(payload: &str, movie: bool) -> Result<Vec<Segment>, CoreError> {
-    let root: Value = serde_json::from_str(payload)?;
+fn parse_segment_map(container: &Value, movie: bool) -> Vec<Segment> {
     let bound = |part: &Value, seconds: &str, millis: &str| {
         part.get(seconds).and_then(Value::as_f64).or_else(|| part.get(millis).and_then(Value::as_f64).map(|v| v / 1000.0))
     };
     let read = |name: &str, kind: Kind| -> Option<Segment> {
-        let part = root.get(name).filter(|v| v.is_object())?;
+        let part = container.get(name).filter(|v| v.is_object())?;
         let start = bound(part, "start_sec", "start_ms")?;
         let end = bound(part, "end_sec", "end_ms").or((kind == Kind::PostCredits).then_some(f64::MAX))?;
         (start >= 0.0 && end > start).then_some(Segment { kind, start, end })
@@ -86,7 +84,20 @@ pub fn parse_introdb(payload: &str, movie: bool) -> Result<Vec<Segment>, CoreErr
         out.extend([read("intro", Kind::Intro), read("recap", Kind::Recap), read("outro", Kind::Outro)].into_iter().flatten());
     }
     out.extend(post);
-    Ok(out)
+    out
+}
+
+/// IntroDB `GET /segments`.
+pub fn parse_introdb(payload: &str, movie: bool) -> Result<Vec<Segment>, CoreError> {
+    let root: Value = serde_json::from_str(payload)?;
+    Ok(parse_segment_map(&root, movie))
+}
+
+/// SkipDB `GET /api/segments`.
+pub fn parse_skipdb(payload: &str, movie: bool) -> Result<Vec<Segment>, CoreError> {
+    let root: Value = serde_json::from_str(payload)?;
+    let container = root.get("segments").filter(|v| v.is_object()).unwrap_or(&root);
+    Ok(parse_segment_map(container, movie))
 }
 
 /// AniSkip `GET /v2/skip-times/{mal}/{episode}`.
@@ -286,6 +297,9 @@ mod tests {
         assert_eq!(parse_introdb(introdb, false).unwrap(), vec![seg(Kind::Intro, 4.0, 92.0), seg(Kind::Outro, 1344.99, 1434.95)]);
         let movie = r#"{"outro":{"start_sec":7000,"end_sec":7300},"post_credits":{"start_sec":7200,"end_sec":null}}"#;
         assert_eq!(parse_introdb(movie, true).unwrap()[0], seg(Kind::MovieCredits, 7000.0, 7200.0));
+        let skipdb = r#"{"imdb_id":"tt0903747","segments":{"intro":{"start_ms":229500,"end_ms":246500},"recap":null,"outro":{"start_ms":3434000,"end_ms":3500000},"preview":null}}"#;
+        assert_eq!(parse_skipdb(skipdb, false).unwrap(), vec![seg(Kind::Intro, 229.5, 246.5), seg(Kind::Outro, 3434.0, 3500.0)]);
+        assert_eq!(parse_skipdb(skipdb, true).unwrap(), vec![seg(Kind::MovieCredits, 3434.0, 3500.0)]);
         let aniskip = r#"{"found":true,"results":[{"interval":{"startTime":4,"endTime":96},"skipType":"op"},{"interval":{"startTime":1345,"endTime":1435},"skipType":"mixed-ed"},{"interval":{"startTime":1,"endTime":2},"skipType":"other"}]}"#;
         assert_eq!(parse_aniskip(aniskip).unwrap(), vec![seg(Kind::Intro, 4.0, 96.0), seg(Kind::Outro, 1345.0, 1435.0)]);
     }

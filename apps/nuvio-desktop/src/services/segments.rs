@@ -8,11 +8,15 @@
 //! buttons are on.
 
 use nuvio_core::client::AddonClient;
-use nuvio_core::skip::{parse_aniskip, parse_introdb, Kind, Segment};
+use nuvio_core::skip::{parse_aniskip, parse_introdb, parse_skipdb, Kind, Segment};
 use serde_json::Value;
 use std::time::Duration;
 
 const TIMEOUT: Duration = Duration::from_secs(8);
+
+fn skipdb_base() -> &'static str {
+    option_env!("NUVIO_SKIPDB_API_URL").unwrap_or("https://api.skipdb.tv/api")
+}
 
 fn introdb_base() -> &'static str {
     option_env!("NUVIO_INTRODB_API_URL").unwrap_or("https://api.introdb.app")
@@ -105,13 +109,15 @@ pub async fn fetch(client: &AddonClient, target: &Target) -> Vec<Vec<Segment>> {
                 Some((season, episode)) => format!("season={season}&episode={episode}"),
                 None => "is_movie=true".into(),
             };
-            let introdb = get(client, format!("{}/segments?imdb_id={id}&{query}", introdb_base()))
-                .await
-                .and_then(|payload| parse_introdb(&payload, episode.is_none()).ok())
-                .unwrap_or_default();
-            let mut out = vec![introdb];
+            let (skipdb_raw, introdb_raw) = tokio::join!(
+                get(client, format!("{}/segments?imdb_id={id}&{query}", skipdb_base())),
+                get(client, format!("{}/segments?imdb_id={id}&{query}", introdb_base()))
+            );
+            let skipdb = skipdb_raw.and_then(|payload| parse_skipdb(&payload, episode.is_none()).ok()).unwrap_or_default();
+            let introdb = introdb_raw.and_then(|payload| parse_introdb(&payload, episode.is_none()).ok()).unwrap_or_default();
+            let mut out = vec![skipdb, introdb];
             if let Some((season, number)) = episode {
-                let missing = [Kind::Intro, Kind::Outro].iter().any(|kind| !out[0].iter().any(|s| s.kind == *kind));
+                let missing = [Kind::Intro, Kind::Outro].iter().any(|kind| !out.iter().any(|list| list.iter().any(|s| s.kind == *kind)));
                 if missing {
                     let mapped = get(client, format!("{}/imdb?id={id}", mapping_base())).await.and_then(|p| mal_of_season(&p, *season));
                     if let Some(mal) = mapped {
